@@ -1,4 +1,4 @@
-# Micro SaaS Starter
+# Next Vibe App Starter
 
 Production-ready Next.js starter for multi-tenant SaaS apps with Better Auth, PostgreSQL + Drizzle, and a modern app shell.
 
@@ -45,7 +45,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # Optional integrations
 RESEND_API_KEY=
-RESEND_FROM="Micro SaaS Starter <onboarding@resend.dev>"
+RESEND_FROM="Next Vibe App Starter <onboarding@resend.dev>"
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 BLOB_READ_WRITE_TOKEN=

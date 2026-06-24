@@ -1,13 +1,6 @@
-import {
-  boolean,
-  index,
-  pgTable,
-  primaryKey,
-  text,
-  timestamp,
-} from 'drizzle-orm/pg-core'
+import { boolean, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 
-import { organization, user } from './auth'
+import { user } from './auth'
 
 export const appearanceThemeEnum = ['system', 'light', 'dark'] as const
 export const appearanceBaseColorEnum = [
@@ -26,7 +19,7 @@ export const appearanceAccentColorEnum = [
   'orange',
   'pink',
 ] as const
-export const workspaceNotificationSettingKeys = [
+export const userNotificationSettingKeys = [
   'authNewLoginDetected',
   'authPasswordChanged',
   'authTwoFactorStatusChanged',
@@ -39,19 +32,20 @@ export const workspaceNotificationSettingKeys = [
   'workspaceRoleChanged',
   'workspaceSettingsUpdated',
   'workspaceDeleted',
+  'issueAssignedToMe',
 ] as const
 
 export type AppearanceTheme = (typeof appearanceThemeEnum)[number]
 export type AppearanceBaseColor = (typeof appearanceBaseColorEnum)[number]
 export type AppearanceAccentColor = (typeof appearanceAccentColorEnum)[number]
-export type WorkspaceNotificationSettingKey =
-  (typeof workspaceNotificationSettingKeys)[number]
-export type WorkspaceNotificationSettings = Record<
-  WorkspaceNotificationSettingKey,
+export type UserNotificationSettingKey =
+  (typeof userNotificationSettingKeys)[number]
+export type UserNotificationSettings = Record<
+  UserNotificationSettingKey,
   boolean
 >
 
-export const workspaceNotificationDefaults: WorkspaceNotificationSettings = {
+export const userNotificationDefaults: UserNotificationSettings = {
   authNewLoginDetected: true,
   authPasswordChanged: true,
   authTwoFactorStatusChanged: true,
@@ -64,17 +58,15 @@ export const workspaceNotificationDefaults: WorkspaceNotificationSettings = {
   workspaceRoleChanged: true,
   workspaceSettingsUpdated: true,
   workspaceDeleted: true,
+  issueAssignedToMe: true,
 }
 
-export const userWorkspaceAppearance = pgTable(
-  'user_workspace_appearance',
+export const userAppearance = pgTable(
+  'user_appearance',
   {
     userId: text('user_id')
-      .notNull()
+      .primaryKey()
       .references(() => user.id, { onDelete: 'cascade' }),
-    organizationId: text('organization_id')
-      .notNull()
-      .references(() => organization.id, { onDelete: 'cascade' }),
     theme: text('theme').$type<AppearanceTheme>().notNull().default('system'),
     baseColor: text('base_color')
       .$type<AppearanceBaseColor>()
@@ -84,31 +76,23 @@ export const userWorkspaceAppearance = pgTable(
       .$type<AppearanceAccentColor>()
       .notNull()
       .default('blue'),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at')
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
       .defaultNow()
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => [
-    primaryKey({
-      columns: [table.userId, table.organizationId],
-      name: 'user_workspace_appearance_pk',
-    }),
-    index('user_workspace_appearance_user_idx').on(table.userId),
-    index('user_workspace_appearance_org_idx').on(table.organizationId),
-  ],
+  (table) => [index('user_appearance_user_idx').on(table.userId)],
 )
 
-export const userWorkspaceNotificationSettings = pgTable(
-  'user_workspace_notification_settings',
+export const userNotificationSettings = pgTable(
+  'user_notification_settings',
   {
     userId: text('user_id')
-      .notNull()
+      .primaryKey()
       .references(() => user.id, { onDelete: 'cascade' }),
-    organizationId: text('organization_id')
-      .notNull()
-      .references(() => organization.id, { onDelete: 'cascade' }),
     authNewLoginDetected: boolean('auth_new_login_detected')
       .notNull()
       .default(true),
@@ -143,20 +127,14 @@ export const userWorkspaceNotificationSettings = pgTable(
       .notNull()
       .default(true),
     workspaceDeleted: boolean('workspace_deleted').notNull().default(true),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at')
+    issueAssignedToMe: boolean('issue_assigned_to_me').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
       .defaultNow()
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => [
-    primaryKey({
-      columns: [table.userId, table.organizationId],
-      name: 'user_workspace_notification_settings_pk',
-    }),
-    index('user_workspace_notification_settings_user_idx').on(table.userId),
-    index('user_workspace_notification_settings_org_idx').on(
-      table.organizationId,
-    ),
-  ],
+  (table) => [index('user_notification_settings_user_idx').on(table.userId)],
 )

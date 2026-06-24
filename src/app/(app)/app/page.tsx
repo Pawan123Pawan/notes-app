@@ -1,29 +1,33 @@
 import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
-
 import {
-  getCurrentSession,
-  getLoginPath,
-  getPrimaryWorkspace,
-} from '@/lib/auth-server'
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from '@/components/ui/breadcrumb'
+import { PageContainer } from '@/components/ui/page-container'
+import { PageHeader } from '@/components/ui/page-header'
 
 export const metadata: Metadata = {
   title: 'Dashboard',
-  description:
-    'Overview of your workspace. Build out charts, shortcuts, and activity here.',
+  description: 'Overview of your account. Build your main product UI here.',
 }
 
-export default async function AppHomePage() {
-  const session = await getCurrentSession()
-  if (!session) {
-    redirect(getLoginPath('/app'))
-  }
+export default function AppHomePage() {
+  return (
+    <PageContainer>
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbPage>Dashboard</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
-  const workspace = await getPrimaryWorkspace(session.user.id)
-
-  if (!workspace) {
-    redirect('/app/onboarding')
-  }
-
-  redirect(`/app/${workspace.workspaceSlug}`)
+      <PageHeader
+        title="Dashboard"
+        description="Build your main product experience here."
+      />
+    </PageContainer>
+  )
 }

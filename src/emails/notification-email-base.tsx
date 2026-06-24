@@ -11,7 +11,7 @@ import {
   Text,
 } from 'react-email'
 
-export type WorkspaceNotificationBaseProps = {
+export type NotificationEmailBaseProps = {
   preview: string
   title: string
   greetingName?: string | null
@@ -22,7 +22,7 @@ export type WorkspaceNotificationBaseProps = {
   footer?: string
 }
 
-export function WorkspaceNotificationBase({
+export function NotificationEmailBase({
   preview,
   title,
   greetingName,
@@ -30,8 +30,8 @@ export function WorkspaceNotificationBase({
   details,
   actionLabel,
   actionUrl,
-  footer = 'You are receiving this email based on your notification settings.',
-}: WorkspaceNotificationBaseProps) {
+  footer = 'You are receiving this email because of activity on your account.',
+}: NotificationEmailBaseProps) {
   const safeGreeting = greetingName?.trim() || 'there'
 
   return (
@@ -62,7 +62,7 @@ export function WorkspaceNotificationBase({
           ) : null}
           <Hr style={hr} />
           <Text style={footerText}>{footer}</Text>
-          <Text style={footerSite}>Micro SaaS Starter</Text>
+          <Text style={footerSite}>Next Vibe App Starter</Text>
         </Container>
       </Body>
     </Html>

@@ -218,6 +218,8 @@ export function LoginForm({
       verifyBackupCode.error.message) ||
     null
 
+  const oauthEnabled = googleOAuthEnabled || githubOAuthEnabled
+
   return (
     <Card className="ring-border/60 border-0 shadow-none ring-1">
       <CardHeader className="gap-1 pb-2 text-center">
@@ -227,64 +229,48 @@ export function LoginForm({
         <CardDescription>
           {isTwoFactorStep
             ? 'Enter the code from your authenticator app to finish signing in.'
-            : 'Use your email, Google, or GitHub to access your account.'}
+            : oauthEnabled
+              ? 'Use your email, Google, or GitHub to access your account.'
+              : 'Use your email to access your account.'}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
         {!isTwoFactorStep ? (
           <>
-            <div className="flex flex-col gap-3">
-              <Button
-                className="w-full gap-2"
-                disabled={busy || !githubOAuthEnabled}
-                loading={signInGithub.isPending && githubOAuthEnabled}
-                onClick={() => signInGithub.mutate()}
-                type="button"
-                variant="outline"
-              >
-                {!signInGithub.isPending ? <GitHubIcon /> : null}
-                Continue with GitHub
-              </Button>
-              {!githubOAuthEnabled ? (
-                <p className="text-muted-foreground text-center text-xs">
-                  GitHub sign-in is disabled. Set{' '}
-                  <code className="bg-muted rounded px-1 py-0.5 text-[0.7rem]">
-                    GITHUB_CLIENT_ID
-                  </code>{' '}
-                  and{' '}
-                  <code className="bg-muted rounded px-1 py-0.5 text-[0.7rem]">
-                    GITHUB_CLIENT_SECRET
-                  </code>{' '}
-                  to enable it.
-                </p>
-              ) : null}
-              <Button
-                className="w-full gap-2"
-                disabled={busy || !googleOAuthEnabled}
-                loading={signInGoogle.isPending && googleOAuthEnabled}
-                onClick={() => signInGoogle.mutate()}
-                type="button"
-                variant="outline"
-              >
-                {!signInGoogle.isPending ? <GoogleIcon /> : null}
-                Continue with Google
-              </Button>
-              {!googleOAuthEnabled ? (
-                <p className="text-muted-foreground text-center text-xs">
-                  Google sign-in is disabled. Set{' '}
-                  <code className="bg-muted rounded px-1 py-0.5 text-[0.7rem]">
-                    GOOGLE_CLIENT_ID
-                  </code>{' '}
-                  and{' '}
-                  <code className="bg-muted rounded px-1 py-0.5 text-[0.7rem]">
-                    GOOGLE_CLIENT_SECRET
-                  </code>{' '}
-                  to enable it.
-                </p>
-              ) : null}
-            </div>
+            {oauthEnabled ? (
+              <div className="flex flex-col gap-3">
+                {githubOAuthEnabled ? (
+                  <Button
+                    className="w-full gap-2"
+                    disabled={busy}
+                    loading={signInGithub.isPending}
+                    onClick={() => signInGithub.mutate()}
+                    type="button"
+                    variant="outline"
+                  >
+                    {!signInGithub.isPending ? <GitHubIcon /> : null}
+                    Continue with GitHub
+                  </Button>
+                ) : null}
+                {googleOAuthEnabled ? (
+                  <Button
+                    className="w-full gap-2"
+                    disabled={busy}
+                    loading={signInGoogle.isPending}
+                    onClick={() => signInGoogle.mutate()}
+                    type="button"
+                    variant="outline"
+                  >
+                    {!signInGoogle.isPending ? <GoogleIcon /> : null}
+                    Continue with Google
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
 
-            <FieldSeparator childrenClassName="bg-card">or</FieldSeparator>
+            {oauthEnabled ? (
+              <FieldSeparator childrenClassName="bg-card">or</FieldSeparator>
+            ) : null}
 
             <form
               className="flex flex-col gap-5"

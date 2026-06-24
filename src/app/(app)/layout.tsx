@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Micro SaaS Starter',
+  title: 'Next Vibe App Starter',
   description:
     'Production-ready Next.js template with Better Auth, Drizzle and PostgreSQL, TanStack Query, and tRPC—focus on your product, not plumbing.',
 }

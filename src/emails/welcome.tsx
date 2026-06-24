@@ -26,11 +26,11 @@ export default function WelcomeEmail({ user, appUrl }: WelcomeEmailProps) {
   return (
     <Html lang="en">
       <Head />
-      <Preview>Welcome to Micro SaaS Starter</Preview>
+      <Preview>Welcome to Next Vibe App Starter</Preview>
       <Body style={main}>
         <Container style={container}>
           <Heading as="h1" style={h1}>
-            Welcome to Micro SaaS Starter
+            Welcome to Next Vibe App Starter
           </Heading>
           <Text style={text}>Hi {greetingName},</Text>
           <Text style={text}>
@@ -48,7 +48,7 @@ export default function WelcomeEmail({ user, appUrl }: WelcomeEmailProps) {
             Need help getting started? Reply to this email and we&apos;ll help
             you out.
           </Text>
-          <Text style={footerSite}>Micro SaaS Starter</Text>
+          <Text style={footerSite}>Next Vibe App Starter</Text>
         </Container>
       </Body>
     </Html>

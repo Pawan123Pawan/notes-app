@@ -1,7 +1,7 @@
 import {
-  WorkspaceNotificationBase,
-  type WorkspaceNotificationBaseProps,
-} from './workspace-notification-base'
+  NotificationEmailBase,
+  type NotificationEmailBaseProps,
+} from './notification-email-base'
 
 export type AuthPasswordChangedEmailProps = {
   userName?: string | null
@@ -16,7 +16,7 @@ export default function AuthPasswordChangedEmail({
   changedAt,
   securityUrl,
 }: AuthPasswordChangedEmailProps) {
-  const content: WorkspaceNotificationBaseProps = {
+  const content: NotificationEmailBaseProps = {
     preview: `Password changed for ${workspaceName}`,
     title: 'Password changed',
     greetingName: userName,
@@ -28,7 +28,7 @@ export default function AuthPasswordChangedEmail({
       'If you did not make this change, secure your account immediately and contact support.',
   }
 
-  return <WorkspaceNotificationBase {...content} />
+  return <NotificationEmailBase {...content} />
 }
 
 AuthPasswordChangedEmail.PreviewProps = {

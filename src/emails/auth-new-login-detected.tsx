@@ -1,7 +1,7 @@
 import {
-  WorkspaceNotificationBase,
-  type WorkspaceNotificationBaseProps,
-} from './workspace-notification-base'
+  NotificationEmailBase,
+  type NotificationEmailBaseProps,
+} from './notification-email-base'
 
 export type AuthNewLoginDetectedEmailProps = {
   userName?: string | null
@@ -20,7 +20,7 @@ export default function AuthNewLoginDetectedEmail({
   loginAt,
   securityUrl,
 }: AuthNewLoginDetectedEmailProps) {
-  const content: WorkspaceNotificationBaseProps = {
+  const content: NotificationEmailBaseProps = {
     preview: `New login detected for ${workspaceName}`,
     title: 'New login detected',
     greetingName: userName,
@@ -32,7 +32,7 @@ export default function AuthNewLoginDetectedEmail({
       'If this was not you, change your password immediately and review active sessions.',
   }
 
-  return <WorkspaceNotificationBase {...content} />
+  return <NotificationEmailBase {...content} />
 }
 
 AuthNewLoginDetectedEmail.PreviewProps = {

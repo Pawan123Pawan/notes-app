@@ -1,5 +1,5 @@
 {
-  "name": "microsaas-starter",
+  "name": "next-vibe-app-starter",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -34,7 +34,7 @@
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.8.0",
-    "microsaas-starter": ".",
+    "next-vibe-app-starter": ".",
     "next": "16.2.4",
     "next-themes": "^0.4.6",
     "pg": "^8.20.0",

@@ -1,9 +1,9 @@
 'use client'
 
-import * as React from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
+import { useTheme } from 'next-themes'
+import * as React from 'react'
 
 import {
   applyAccentColor,
@@ -12,7 +12,6 @@ import {
   type AppearanceBaseColor,
   type AppearanceTheme,
 } from '@/lib/appearance'
-import { showErrorToast } from '@/lib/utils'
 import { useTRPC } from '@/trpc/client'
 
 type AppearanceState = {
@@ -21,17 +20,19 @@ type AppearanceState = {
   accentColor: AppearanceAccentColor
 }
 
-type UseApperanceOptions = {
-  workspaceId?: string
-  currentAppearance: AppearanceState
-  errorMessage: string
+const defaultAppearance: AppearanceState = {
+  theme: 'system',
+  baseColor: 'neutral',
+  accentColor: 'blue',
 }
 
-export function useApperance({
-  workspaceId,
-  currentAppearance,
-  errorMessage,
-}: UseApperanceOptions) {
+type UseAppearanceOptions = {
+  currentAppearance?: AppearanceState
+}
+
+export function useAppearance({
+  currentAppearance = defaultAppearance,
+}: UseAppearanceOptions = {}) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const router = useRouter()
@@ -51,13 +52,7 @@ export function useApperance({
       onMutate: async (variables) => {
         applyAppearanceLocally(variables)
 
-        if (!workspaceId) {
-          return { previousAppearance: null as AppearanceState | null }
-        }
-
-        const appearanceQueryKey = trpc.settings.getAppearance.queryKey({
-          workspaceId,
-        })
+        const appearanceQueryKey = trpc.settings.getAppearance.queryKey()
         await queryClient.cancelQueries({ queryKey: appearanceQueryKey })
         const previousAppearance =
           queryClient.getQueryData<AppearanceState>(appearanceQueryKey)
@@ -66,18 +61,10 @@ export function useApperance({
         return { appearanceQueryKey, previousAppearance }
       },
       onSuccess: (data) => {
-        if (!workspaceId) {
-          return
-        }
-
-        queryClient.setQueryData(
-          trpc.settings.getAppearance.queryKey({ workspaceId }),
-          data,
-        )
-
+        queryClient.setQueryData(trpc.settings.getAppearance.queryKey(), data)
         router.refresh()
       },
-      onError: (error, _variables, context) => {
+      onError: (_error, _variables, context) => {
         if (context?.previousAppearance) {
           applyAppearanceLocally(context.previousAppearance)
           if (context.appearanceQueryKey) {
@@ -87,15 +74,10 @@ export function useApperance({
             )
           }
         }
-        showErrorToast(errorMessage, error)
       },
       onSettled: async () => {
-        if (!workspaceId) {
-          return
-        }
-
         await queryClient.invalidateQueries(
-          trpc.settings.getAppearance.queryFilter({ workspaceId }),
+          trpc.settings.getAppearance.queryFilter(),
         )
       },
     }),
@@ -108,16 +90,9 @@ export function useApperance({
         baseColor: partial.baseColor ?? currentAppearance.baseColor,
         accentColor: partial.accentColor ?? currentAppearance.accentColor,
       }
-      if (!workspaceId) {
-        applyAppearanceLocally(nextAppearance)
-        return
-      }
-      saveAppearance.mutate({
-        workspaceId,
-        ...nextAppearance,
-      })
+      applyAppearanceLocally(nextAppearance)
     },
-    [applyAppearanceLocally, currentAppearance, saveAppearance, workspaceId],
+    [applyAppearanceLocally, currentAppearance],
   )
 
   const updateAppearanceAsync = React.useCallback(
@@ -127,32 +102,25 @@ export function useApperance({
         baseColor: partial.baseColor ?? currentAppearance.baseColor,
         accentColor: partial.accentColor ?? currentAppearance.accentColor,
       }
-      if (!workspaceId) {
-        applyAppearanceLocally(nextAppearance)
-        return nextAppearance
-      }
-      return saveAppearance.mutateAsync({
-        workspaceId,
-        ...nextAppearance,
-      })
+      return saveAppearance.mutateAsync(nextAppearance)
     },
-    [applyAppearanceLocally, currentAppearance, saveAppearance, workspaceId],
+    [currentAppearance, saveAppearance],
   )
 
   return {
     currentTheme:
       (theme as AppearanceTheme | undefined) ?? currentAppearance.theme,
     applyAppearanceLocally,
-    saveAppearance,
     updateAppearance,
     updateAppearanceAsync,
     updateTheme: (nextTheme: AppearanceTheme) =>
-      updateAppearance({ theme: nextTheme }),
+      updateAppearanceAsync({ theme: nextTheme }),
     updateBaseColor: (baseColor: AppearanceBaseColor) =>
-      updateAppearance({ baseColor }),
+      updateAppearanceAsync({ baseColor }),
     updateAccentColor: (accentColor: AppearanceAccentColor) =>
-      updateAppearance({ accentColor }),
+      updateAppearanceAsync({ accentColor }),
+    saveAppearance,
   }
 }
 
-export const useAppearance = useApperance
+export const useApperance = useAppearance

@@ -56,7 +56,7 @@ export default function ResetPasswordEmail({
             If you did not request this, you can ignore this email. Your
             password will not change.
           </Text>
-          <Text style={footerSite}>Micro SaaS Starter</Text>
+          <Text style={footerSite}>Next Vibe App Starter</Text>
         </Container>
       </Body>
     </Html>

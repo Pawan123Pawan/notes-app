@@ -1,7 +1,7 @@
 import {
-  WorkspaceNotificationBase,
-  type WorkspaceNotificationBaseProps,
-} from './workspace-notification-base'
+  NotificationEmailBase,
+  type NotificationEmailBaseProps,
+} from './notification-email-base'
 
 export type AuthTwoFactorStatusChangedEmailProps = {
   userName?: string | null
@@ -18,7 +18,7 @@ export default function AuthTwoFactorStatusChangedEmail({
   changedAt,
   securityUrl,
 }: AuthTwoFactorStatusChangedEmailProps) {
-  const content: WorkspaceNotificationBaseProps = {
+  const content: NotificationEmailBaseProps = {
     preview: `Two-factor authentication ${status}`,
     title: `Two-factor authentication ${status}`,
     greetingName: userName,
@@ -28,7 +28,7 @@ export default function AuthTwoFactorStatusChangedEmail({
     actionUrl: securityUrl,
   }
 
-  return <WorkspaceNotificationBase {...content} />
+  return <NotificationEmailBase {...content} />
 }
 
 AuthTwoFactorStatusChangedEmail.PreviewProps = {

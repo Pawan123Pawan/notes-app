@@ -3,7 +3,7 @@ import * as z from 'zod'
 
 export const env = createEnv({
   server: {
-    APP_NAME: z.string().min(1).default('Micro SaaS Starter'),
+    APP_NAME: z.string().min(1).default('Next Vibe App Starter'),
     DATABASE_URL: z.union([z.string().startsWith('postgresql://'), z.url()]),
     BETTER_AUTH_SECRET: z.string().min(32),
     BETTER_AUTH_URL: z.url().optional().default('http://localhost:3000'),
@@ -14,11 +14,11 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: z.string().optional(),
     /** When unset, password reset emails are skipped (see `sendResetPassword` in `auth.ts`). */
     RESEND_API_KEY: z.string().optional(),
-    /** Sender address, e.g. `Micro SaaS Starter <noreply@yourdomain.com>`. */
+    /** Sender address, e.g. `Next Vibe App Starter <noreply@yourdomain.com>`. */
     RESEND_FROM: z
       .string()
       .min(1)
-      .default('Micro SaaS Starter <onboarding@resend.dev>'),
+      .default('Next Vibe App Starter <onboarding@resend.dev>'),
   },
   client: {
     NEXT_PUBLIC_APP_URL: z.url().default('http://localhost:3000'),

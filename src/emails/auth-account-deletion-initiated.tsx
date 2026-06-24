@@ -1,7 +1,7 @@
 import {
-  WorkspaceNotificationBase,
-  type WorkspaceNotificationBaseProps,
-} from './workspace-notification-base'
+  NotificationEmailBase,
+  type NotificationEmailBaseProps,
+} from './notification-email-base'
 
 export type AuthAccountDeletionInitiatedEmailProps = {
   userName?: string | null
@@ -16,7 +16,7 @@ export default function AuthAccountDeletionInitiatedEmail({
   requestedAt,
   supportUrl,
 }: AuthAccountDeletionInitiatedEmailProps) {
-  const content: WorkspaceNotificationBaseProps = {
+  const content: NotificationEmailBaseProps = {
     preview: 'Account deletion initiated',
     title: 'Account deletion initiated',
     greetingName: userName,
@@ -28,7 +28,7 @@ export default function AuthAccountDeletionInitiatedEmail({
       'If this request was not made by you, contact support immediately to protect your account.',
   }
 
-  return <WorkspaceNotificationBase {...content} />
+  return <NotificationEmailBase {...content} />
 }
 
 AuthAccountDeletionInitiatedEmail.PreviewProps = {

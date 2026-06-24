@@ -1,6 +1,5 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
 import { Check, Monitor, Moon, Sun } from 'lucide-react'
 
 import { SettingsSection } from './settings-section'
@@ -11,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
+import { cn, getErrorMessage } from '@/lib/utils'
 import {
   accentSpecs,
   type AppearanceAccentColor,
@@ -20,8 +19,8 @@ import {
   baseColorSpecs,
 } from '@/lib/appearance'
 import { toast } from 'sonner'
-import { useTRPC } from '@/trpc/client'
-import { useApperance } from '@/hooks/use-appearance'
+import { useResolvedAppearance } from '@/hooks/resolved-appearance-context'
+import { useAppearance } from '@/hooks/use-appearance'
 
 const themeOptions: Array<{
   value: AppearanceTheme
@@ -33,31 +32,11 @@ const themeOptions: Array<{
   { value: 'dark', label: 'Dark', Icon: Moon },
 ]
 
-type AppearanceSettingsProps = {
-  workspaceId: string
-}
+export function AppearanceSettings() {
+  const resolvedAppearance = useResolvedAppearance()
 
-export function AppearanceSettings({ workspaceId }: AppearanceSettingsProps) {
-  const trpc = useTRPC()
-  const appearanceQuery = useQuery(
-    trpc.settings.getAppearance.queryOptions({ workspaceId }),
-  )
-
-  const persistedTheme = appearanceQuery.data?.theme ?? 'system'
-  const persistedBaseColor = appearanceQuery.data?.baseColor ?? 'neutral'
-  const persistedAccentColor = appearanceQuery.data?.accentColor ?? 'blue'
-  const selectedTheme = persistedTheme
-  const selectedBaseColor = persistedBaseColor
-  const selectedAccentColor = persistedAccentColor
-
-  const appearance = useApperance({
-    workspaceId,
-    currentAppearance: {
-      theme: selectedTheme,
-      baseColor: selectedBaseColor,
-      accentColor: selectedAccentColor,
-    },
-    errorMessage: 'Could not save appearance settings.',
+  const appearance = useAppearance({
+    currentAppearance: resolvedAppearance,
   })
 
   const updateAppearance = (
@@ -67,40 +46,12 @@ export function AppearanceSettings({ workspaceId }: AppearanceSettingsProps) {
       accentColor: AppearanceAccentColor
     }>,
   ) => {
-    const nextTheme = partial.theme ?? selectedTheme
-    const nextBaseColor = partial.baseColor ?? selectedBaseColor
-    const nextAccentColor = partial.accentColor ?? selectedAccentColor
-
-    toast.promise(
-      appearance.updateAppearanceAsync({
-        theme: nextTheme,
-        baseColor: nextBaseColor,
-        accentColor: nextAccentColor,
-      }),
-      {
-        loading: 'Saving appearance settings...',
-        success: 'Appearance settings saved successfully.',
-        error: 'Could not save appearance settings.',
-      },
-    )
-  }
-
-  if (appearanceQuery.isPending) {
-    return (
-      <p className="text-muted-foreground text-sm">
-        Loading appearance settings…
-      </p>
-    )
-  }
-
-  if (appearanceQuery.isError) {
-    return (
-      <p className="text-destructive text-sm">
-        {appearanceQuery.error instanceof Error
-          ? appearanceQuery.error.message
-          : 'Could not load appearance settings.'}
-      </p>
-    )
+    toast.promise(appearance.updateAppearanceAsync(partial), {
+      loading: 'Applying appearance settings...',
+      success: 'Appearance updated.',
+      error: (err) =>
+        getErrorMessage(err, 'Could not update appearance settings.'),
+    })
   }
 
   return (
@@ -119,7 +70,7 @@ export function AppearanceSettings({ workspaceId }: AppearanceSettingsProps) {
           <CardContent>
             <div className="grid gap-3 sm:grid-cols-3">
               {themeOptions.map(({ value, label, Icon }) => {
-                const isActive = selectedTheme === value
+                const isActive = resolvedAppearance.theme === value
                 return (
                   <button
                     key={value}
@@ -127,9 +78,7 @@ export function AppearanceSettings({ workspaceId }: AppearanceSettingsProps) {
                     className={cn(
                       'border-border bg-background hover:border-foreground/40 flex items-center justify-center gap-2 rounded-xl border px-4 py-5 text-sm font-medium transition',
                       isActive && 'ring-ring ring-1',
-                      appearance.saveAppearance.isPending && 'opacity-50',
                     )}
-                    disabled={appearance.saveAppearance.isPending}
                     onClick={() => {
                       updateAppearance({ theme: value })
                     }}
@@ -160,7 +109,7 @@ export function AppearanceSettings({ workspaceId }: AppearanceSettingsProps) {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {(Object.keys(baseColorSpecs) as AppearanceBaseColor[]).map(
                 (baseColor) => {
-                  const isActive = selectedBaseColor === baseColor
+                  const isActive = resolvedAppearance.baseColor === baseColor
                   return (
                     <button
                       key={baseColor}
@@ -168,12 +117,10 @@ export function AppearanceSettings({ workspaceId }: AppearanceSettingsProps) {
                       className={cn(
                         'border-border bg-background hover:border-foreground/40 flex items-center justify-between rounded-xl border px-4 py-3 text-sm font-medium transition',
                         isActive && 'ring-ring ring-1',
-                        appearance.saveAppearance.isPending && 'opacity-50',
                       )}
                       onClick={() => {
                         updateAppearance({ baseColor })
                       }}
-                      disabled={appearance.saveAppearance.isPending}
                       aria-label={`Select ${baseColor} base color`}
                     >
                       <span>{baseColorSpecs[baseColor].label}</span>
@@ -207,23 +154,20 @@ export function AppearanceSettings({ workspaceId }: AppearanceSettingsProps) {
             <div className="flex flex-wrap gap-3">
               {(Object.keys(accentSpecs) as AppearanceAccentColor[]).map(
                 (accentColor) => {
-                  const isActive = selectedAccentColor === accentColor
+                  const isActive =
+                    resolvedAppearance.accentColor === accentColor
                   return (
                     <button
                       key={accentColor}
                       type="button"
                       className={cn(
-                        'relative flex size-11 items-center justify-center rounded-full border-2 transition',
-                        appearance.saveAppearance.isPending && 'opacity-50',
-                        isActive
-                          ? 'border-foreground'
-                          : 'hover:border-foreground/40 border-transparent',
+                        'hover:border-foreground/40 relative flex size-11 items-center justify-center rounded-full border-2 border-transparent transition',
+                        isActive && 'border-foreground/40',
                       )}
                       onClick={() => {
                         updateAppearance({ accentColor })
                       }}
                       aria-label={`Select ${accentColor} accent color`}
-                      disabled={appearance.saveAppearance.isPending}
                     >
                       <span
                         className={cn(
@@ -231,16 +175,15 @@ export function AppearanceSettings({ workspaceId }: AppearanceSettingsProps) {
                           accentSpecs[accentColor].swatchClassName,
                         )}
                       >
-                        {isActive ? (
-                          <Check
-                            className={cn(
-                              'size-4',
-                              accentColor === 'slate'
-                                ? 'text-black'
-                                : 'text-white',
-                            )}
-                          />
-                        ) : null}
+                        <Check
+                          className={cn(
+                            'size-4',
+                            isActive ? 'opacity-100' : 'opacity-0',
+                            accentColor === 'slate'
+                              ? 'text-black'
+                              : 'text-white',
+                          )}
+                        />
                       </span>
                     </button>
                   )
@@ -250,14 +193,6 @@ export function AppearanceSettings({ workspaceId }: AppearanceSettingsProps) {
           </CardContent>
         </Card>
       </SettingsSection>
-
-      {appearance.saveAppearance.isError ? (
-        <p className="text-destructive text-sm">
-          {appearance.saveAppearance.error instanceof Error
-            ? appearance.saveAppearance.error.message
-            : 'Could not save appearance settings.'}
-        </p>
-      ) : null}
     </div>
   )
 }
