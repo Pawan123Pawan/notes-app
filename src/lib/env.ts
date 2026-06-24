@@ -3,11 +3,6 @@ import * as z from 'zod'
 
 export const env = createEnv({
   server: {
-    WEBSITE_DATABASE_URL: z.union([
-      z.string().startsWith('postgresql://'),
-      z.url(),
-    ]),
-    PAYLOAD_SECRET: z.string().min(24),
     APP_NAME: z.string().min(1).default('Micro SaaS Starter'),
     DATABASE_URL: z.union([z.string().startsWith('postgresql://'), z.url()]),
     BETTER_AUTH_SECRET: z.string().min(32),
@@ -29,8 +24,6 @@ export const env = createEnv({
     NEXT_PUBLIC_APP_URL: z.url().default('http://localhost:3000'),
   },
   runtimeEnv: {
-    WEBSITE_DATABASE_URL: process.env.WEBSITE_DATABASE_URL,
-    PAYLOAD_SECRET: process.env.PAYLOAD_SECRET,
     APP_NAME: process.env.APP_NAME,
     DATABASE_URL: process.env.DATABASE_URL,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
