@@ -1,0 +1,13 @@
+# Agents Markdown Files
+AGENTS.md
+.cursor
+.agents
+.agent
+.claude
+
+# Drizzle Migrations
+src/db/migrations
+
+# Payload Generated Files
+src/payload-migrations
+src/payload-types.ts

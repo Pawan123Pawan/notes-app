@@ -1,0 +1,1 @@
+ALTER TABLE "user_workspace_appearance" ADD COLUMN "base_color" text DEFAULT 'neutral' NOT NULL;
