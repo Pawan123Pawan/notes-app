@@ -2,18 +2,23 @@ import { TRPCError } from '@trpc/server'
 import mongoose from 'mongoose'
 
 import { connectDB } from '@/db'
+import { Note, type NoteDocument, type NoteMetadata } from '@/db/schema/note'
+import type { NoteSourceType, NoteStatus } from '@/db/schema/note.constants'
 import {
-  Note,
-  type NoteDocument,
-  type NoteMetadata,
-  type NoteSourceType,
-  type NoteStatus,
-} from '@/db/schema/note'
+  generateNoteTitle,
+  renderNotebookHtml,
+  structureTranscript,
+} from '@/lib/llm'
+import { getErrorMessage } from '@/lib/utils'
+import { fetchYoutubeTranscript } from '@/lib/youtube'
+
+import { Subject } from '@/db/schema/subject'
 
 import type {
   CreateNoteInput,
   GetNoteByIdInput,
   ListNotesInput,
+  UpdateNoteSubjectInput,
 } from '@/trpc/routers/notes/notes.input'
 
 export type NoteSummary = {
@@ -84,23 +89,100 @@ function parseSubjectId(subjectId?: string) {
   return new mongoose.Types.ObjectId(subjectId)
 }
 
-async function enqueueNoteProcessing(_noteId: string) {
-  // BullMQ worker wiring lands in a later feature.
+function scheduleNoteProcessing(noteId: string) {
+  void processNote(noteId).catch((error) => {
+    console.error(
+      `[notes] Background processing failed for ${noteId}:`,
+      getErrorMessage(error, 'Note processing failed'),
+    )
+  })
+}
+
+export async function processNote(noteId: string) {
+  if (!mongoose.isValidObjectId(noteId)) {
+    throw new Error(`Invalid note id: ${noteId}`)
+  }
+
+  await connectDB()
+
+  const note = await Note.findById(noteId)
+
+  if (!note) {
+    throw new Error(`Note ${noteId} not found`)
+  }
+
+  if (note.status === 'completed') {
+    return
+  }
+
+  await Note.updateOne(
+    { _id: noteId },
+    {
+      status: 'processing',
+      errorMessage: null,
+    },
+  )
+
+  try {
+    const structuredNotes = await structureTranscript(note.rawTranscript)
+    const [notebookHtml, title] = await Promise.all([
+      renderNotebookHtml(structuredNotes),
+      generateNoteTitle(structuredNotes),
+    ])
+
+    await Note.updateOne(
+      { _id: noteId },
+      {
+        structuredNotes,
+        notebookHtml,
+        title: title.trim() || note.title,
+        status: 'completed',
+        errorMessage: null,
+      },
+    )
+  } catch (error) {
+    const message = getErrorMessage(error, 'Note processing failed')
+
+    await Note.updateOne(
+      { _id: noteId },
+      {
+        status: 'failed',
+        errorMessage: message,
+      },
+    )
+
+    throw error
+  }
 }
 
 export async function createNote(
   userId: string,
   input: CreateNoteInput,
 ): Promise<CreateNoteResult> {
-  if (input.sourceType === 'youtube') {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message:
-        'YouTube URLs are not supported yet. Paste a transcript instead.',
-    })
-  }
-
   await connectDB()
+
+  if (input.sourceType === 'youtube') {
+    const { videoId, transcript } = await fetchYoutubeTranscript(input.url)
+
+    const note = await Note.create({
+      userId,
+      subjectId: parseSubjectId(input.subjectId),
+      sourceType: 'youtube',
+      sourceUrl: input.url,
+      rawTranscript: transcript,
+      metadata: {
+        videoTitle: videoId,
+      },
+      status: 'pending',
+    })
+
+    scheduleNoteProcessing(note._id.toString())
+
+    return {
+      id: note._id.toString(),
+      status: note.status,
+    }
+  }
 
   const note = await Note.create({
     userId,
@@ -110,7 +192,7 @@ export async function createNote(
     status: 'pending',
   })
 
-  await enqueueNoteProcessing(note._id.toString())
+  scheduleNoteProcessing(note._id.toString())
 
   return {
     id: note._id.toString(),
@@ -198,6 +280,64 @@ export async function listNotes(
     items: page.map((note) => toNoteSummary(note)),
     nextCursor,
   }
+}
+
+export async function updateNoteSubject(
+  userId: string,
+  input: UpdateNoteSubjectInput,
+): Promise<NoteSummary> {
+  if (!mongoose.isValidObjectId(input.noteId)) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Invalid note id',
+    })
+  }
+
+  await connectDB()
+
+  const note = await Note.findOne({
+    _id: input.noteId,
+    userId,
+  })
+
+  if (!note) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: 'Note not found',
+    })
+  }
+
+  if (input.subjectId) {
+    if (!mongoose.isValidObjectId(input.subjectId)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Invalid subject id',
+      })
+    }
+
+    const subject = await Subject.findOne({
+      _id: input.subjectId,
+      userId,
+    })
+
+    if (!subject) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Subject not found',
+      })
+    }
+
+    note.subjectId = subject._id
+  } else {
+    note.set('subjectId', null)
+  }
+
+  await Note.updateOne(
+    { _id: note._id, userId },
+    { subjectId: note.subjectId },
+  )
+
+  return toNoteSummary(note)
 }
 
 export async function deleteNote(

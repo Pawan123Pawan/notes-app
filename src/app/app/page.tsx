@@ -1,8 +1,13 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
+import { Suspense } from 'react'
 
+import { BaseButton } from '@/components/ui/button'
 import { PageContainer } from '@/components/ui/page-container'
 import { PageHeader } from '@/components/ui/page-header'
 import { getCurrentSession } from '@/lib/auth-server'
+
+import { RecentNotes } from './recent-notes'
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -17,10 +22,15 @@ export default async function AppDashboardPage() {
       <PageHeader
         title="Dashboard"
         description={`Welcome back, ${session?.user.name ?? 'there'}.`}
+        extraAction={
+          <BaseButton asChild>
+            <Link href="/app/new">New note</Link>
+          </BaseButton>
+        }
       />
-      <p className="text-muted-foreground text-sm">
-        Your notes collection will appear here.
-      </p>
+      <Suspense>
+        <RecentNotes />
+      </Suspense>
     </PageContainer>
   )
 }

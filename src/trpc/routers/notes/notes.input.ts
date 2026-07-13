@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
-import { noteSourceTypes } from '@/db/schema/note'
+import { noteSourceTypes } from '@/db/schema/note.constants'
+import { isYoutubeUrl } from '@/lib/youtube-url'
 
 export const createNoteInput = z.discriminatedUnion('sourceType', [
   z.object({
@@ -14,7 +15,9 @@ export const createNoteInput = z.discriminatedUnion('sourceType', [
   }),
   z.object({
     sourceType: z.literal('youtube'),
-    url: z.url('Enter a valid YouTube URL'),
+    url: z
+      .url('Enter a valid YouTube URL')
+      .refine(isYoutubeUrl, 'Enter a valid YouTube URL'),
     subjectId: z.string().optional(),
   }),
 ])
@@ -40,5 +43,12 @@ export const deleteNoteInput = z.object({
 })
 
 export type DeleteNoteInput = z.infer<typeof deleteNoteInput>
+
+export const updateNoteSubjectInput = z.object({
+  noteId: z.string().min(1),
+  subjectId: z.string().nullable().optional(),
+})
+
+export type UpdateNoteSubjectInput = z.infer<typeof updateNoteSubjectInput>
 
 export const noteSourceTypeSchema = z.enum(noteSourceTypes)

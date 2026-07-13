@@ -17,7 +17,7 @@ export default function NewNotePage() {
     <PageContainer>
       <PageHeader
         title="New note"
-        description="Turn a transcript into structured study notes and a handwritten notebook."
+        description="Upload a transcript file or paste a YouTube URL to generate structured study notes."
       />
       <Suspense>
         <NewNoteForm />

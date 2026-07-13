@@ -1,15 +1,6 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from 'mongoose'
 
-export const noteSourceTypes = ['youtube', 'transcript'] as const
-export type NoteSourceType = (typeof noteSourceTypes)[number]
-
-export const noteStatuses = [
-  'pending',
-  'processing',
-  'completed',
-  'failed',
-] as const
-export type NoteStatus = (typeof noteStatuses)[number]
+import { noteSourceTypes, noteStatuses } from '@/db/schema/note.constants'
 
 const noteMetadataSchema = new Schema(
   {

@@ -11,8 +11,8 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.string().optional(),
   NEXT_PUBLIC_APP_URL: z.string(),
-  OPENAI_API_KEY: z.string().min(1).optional(),
-  REDIS_URL: z.string().min(1).optional(),
+  AI_GATEWAY_API_KEY: z.string().min(1).optional(),
+  AI_GATEWAY_BASE_URL: z.string().url().optional(),
 })
 
 function loadEnv() {
@@ -32,4 +32,8 @@ export const env = loadEnv()
 
 export function getAppUrl() {
   return env.BETTER_AUTH_URL ?? env.NEXT_PUBLIC_APP_URL
+}
+
+export function getAiGatewayBaseUrl() {
+  return env.AI_GATEWAY_BASE_URL ?? 'https://ai-gateway.vercel.sh/v1'
 }
