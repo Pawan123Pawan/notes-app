@@ -8,7 +8,7 @@ import { NoteDetailView } from './note-detail-view'
 
 export const metadata: Metadata = {
   title: 'Note',
-  description: 'View structured study notes and your handwritten notebook.',
+  description: 'View your handwritten A4 study notebook.',
 }
 
 type NotePageProps = {

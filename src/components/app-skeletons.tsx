@@ -101,12 +101,6 @@ export function NoteDetailSkeleton() {
         <Skeleton className="h-9 w-24" />
       </div>
 
-      <div className="flex gap-2">
-        <Skeleton className="h-9 w-36" />
-        <Skeleton className="h-9 w-28" />
-        <Skeleton className="h-9 w-28" />
-      </div>
-
       <Card>
         <CardContent className="flex flex-col gap-3 py-6">
           <Skeleton className="h-4 w-full" />

@@ -1,11 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Copy, Trash2 } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { toast } from 'sonner'
 
 import { NoteDetailSkeleton } from '@/components/app-skeletons'
@@ -32,7 +30,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { NoteStatus } from '@/db/schema/note.constants'
 import { triggerRouteProgressStart } from '@/lib/route-progress'
 import { showErrorToast } from '@/lib/utils'
@@ -41,9 +38,6 @@ import { useTRPC } from '@/trpc/react'
 export type NoteDetailViewProps = {
   noteId: string
 }
-
-const noteDetailTabs = ['structured', 'notebook', 'transcript'] as const
-type NoteDetailTab = (typeof noteDetailTabs)[number]
 
 const statusLabels: Record<NoteStatus, string> = {
   pending: 'Queued',
@@ -66,26 +60,10 @@ function isProcessingStatus(status: NoteStatus) {
   return status === 'pending' || status === 'processing'
 }
 
-function parseNoteDetailTab(value: string | null): NoteDetailTab {
-  if (value === 'notebook' || value === 'transcript') {
-    return value
-  }
-
-  return 'structured'
-}
-
-function tabHref(noteId: string, tab: NoteDetailTab) {
-  return tab === 'structured'
-    ? `/app/notes/${noteId}`
-    : `/app/notes/${noteId}?tab=${tab}`
-}
-
 export function NoteDetailView({ noteId }: NoteDetailViewProps) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const trpc = useTRPC()
   const queryClient = useQueryClient()
-  const activeTab = parseNoteDetailTab(searchParams.get('tab'))
 
   const noteQuery = useQuery({
     ...trpc.notes.getById.queryOptions({ noteId }),
@@ -235,8 +213,8 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete this note?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This permanently removes the note, structured content, and
-                  notebook. This action cannot be undone.
+                  This permanently removes the note and notebook. This action
+                  cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -285,54 +263,15 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
       ) : null}
 
       {note.status === 'completed' ? (
-        <Tabs value={activeTab}>
-          <TabsList>
-            <TabsTrigger asChild value="structured">
-              <Link href={tabHref(noteId, 'structured')}>Structured notes</Link>
-            </TabsTrigger>
-            <TabsTrigger asChild value="notebook">
-              <Link href={tabHref(noteId, 'notebook')}>Notebook</Link>
-            </TabsTrigger>
-            <TabsTrigger asChild value="transcript">
-              <Link href={tabHref(noteId, 'transcript')}>Transcript</Link>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="structured" className="mt-4">
-            <Card>
-              <CardContent className="prose prose-neutral dark:prose-invert max-w-none py-6">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {note.structuredNotes}
-                </ReactMarkdown>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="notebook" className="mt-4">
-            <Card>
-              <CardContent className="bg-muted/40 overflow-auto p-4 sm:p-6">
-                <iframe
-                  title={`${note.title} notebook`}
-                  srcDoc={note.notebookHtml}
-                  className="mx-auto block min-h-[85vh] w-full max-w-[220mm] rounded-md border-0 bg-transparent"
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="transcript" className="mt-4">
-            <Card>
-              <CardContent className="py-6">
-                <p className="text-muted-foreground mb-4 text-sm">
-                  Original transcript used to generate this note.
-                </p>
-                <pre className="bg-muted/40 max-h-[70vh] overflow-auto rounded-lg p-4 text-sm leading-relaxed whitespace-pre-wrap">
-                  {note.rawTranscript}
-                </pre>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        <Card>
+          <CardContent className="bg-muted/40 overflow-auto p-4 sm:p-6">
+            <iframe
+              title={`${note.title} notebook`}
+              srcDoc={note.notebookHtml}
+              className="mx-auto block min-h-[85vh] w-full max-w-[220mm] rounded-md border-0 bg-transparent"
+            />
+          </CardContent>
+        </Card>
       ) : null}
     </div>
   )
