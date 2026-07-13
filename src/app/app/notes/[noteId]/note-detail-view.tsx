@@ -83,7 +83,11 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
       ) : null}
 
       {note.status === 'completed' && note.notebookHtml ? (
-        <NotebookPdfViewer title={note.title} html={note.notebookHtml} />
+        <NotebookPdfViewer
+          noteId={noteId}
+          title={note.title}
+          html={note.notebookHtml}
+        />
       ) : null}
 
       {note.status === 'completed' && !note.notebookHtml ? (

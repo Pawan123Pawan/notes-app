@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
-import { Maximize, Minus, Plus, Printer } from 'lucide-react'
+import { ExternalLink, Maximize, Minus, Plus, Printer } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -13,30 +13,42 @@ import {
 export type NotebookPdfViewerProps = {
   title: string
   html: string
+  noteId?: string
+  /** Fullscreen PDF-only surface (notebook pages only). */
+  variant?: 'embedded' | 'standalone'
 }
 
 const minZoom = 0.5
 const maxZoom = 2
 const zoomStep = 0.1
 
-export function NotebookPdfViewer({ title, html }: NotebookPdfViewerProps) {
+export function NotebookPdfViewer({
+  title,
+  html,
+  noteId,
+  variant = 'embedded',
+}: NotebookPdfViewerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [fitMode, setFitMode] = useState(true)
   const [fitZoom, setFitZoom] = useState(1)
   const [customZoom, setCustomZoom] = useState(1)
 
+  const isStandalone = variant === 'standalone'
   const zoom = fitMode ? fitZoom : customZoom
   const srcDoc = prepareNotebookForView(html, { zoom })
   const zoomLabel = `${Math.round(zoom * 100)}%`
 
-  const measureFitZoom = useCallback((width: number) => {
-    const available = Math.max(width - 48, 200)
-    const next = Math.min(
-      Math.max(available / NOTEBOOK_A4_WIDTH_PX, minZoom),
-      maxZoom,
-    )
-    setFitZoom(next)
-  }, [])
+  const measureFitZoom = useCallback(
+    (width: number) => {
+      const available = Math.max(width - (isStandalone ? 0 : 48), 200)
+      const next = Math.min(
+        Math.max(available / NOTEBOOK_A4_WIDTH_PX, minZoom),
+        maxZoom,
+      )
+      setFitZoom(next)
+    },
+    [isStandalone],
+  )
 
   const containerRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -67,6 +79,27 @@ export function NotebookPdfViewer({ title, html }: NotebookPdfViewerProps) {
   const setManualZoom = (next: number) => {
     setFitMode(false)
     setCustomZoom(Math.min(Math.max(next, minZoom), maxZoom))
+  }
+
+  const openInNewTab = () => {
+    if (!noteId) {
+      return
+    }
+    window.open(`/app/notes/${noteId}/view`, '_blank', 'noopener,noreferrer')
+  }
+
+  if (isStandalone) {
+    return (
+      <div ref={containerRef} className="min-h-dvh bg-[#525659]">
+        <iframe
+          ref={iframeRef}
+          key={zoomLabel}
+          title={`${title} notebook`}
+          srcDoc={srcDoc}
+          className="block min-h-dvh w-full border-0"
+        />
+      </div>
+    )
   }
 
   return (
@@ -107,6 +140,18 @@ export function NotebookPdfViewer({ title, html }: NotebookPdfViewerProps) {
             <Maximize />
             Fit width
           </Button>
+          {noteId ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-label="Open notebook in new tab"
+              onClick={openInNewTab}
+            >
+              <ExternalLink />
+              New tab
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="outline"

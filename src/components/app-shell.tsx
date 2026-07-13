@@ -53,11 +53,15 @@ type AppShellProps = {
   children: React.ReactNode
 }
 
+function isNotebookPdfOnlyRoute(pathname: string) {
+  return /^\/app\/notes\/[^/]+\/view\/?$/.test(pathname)
+}
+
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
   const isAppRoute = pathname === '/app' || pathname.startsWith('/app/')
 
-  if (!isAppRoute) {
+  if (!isAppRoute || isNotebookPdfOnlyRoute(pathname)) {
     return children
   }
 
