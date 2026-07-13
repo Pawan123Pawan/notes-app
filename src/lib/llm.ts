@@ -1,23 +1,38 @@
-import OpenAI from 'openai'
-
-import { env, getAiGatewayBaseUrl } from '@/lib/env'
+import { getGeminiApiKey, getGeminiBaseUrl, getGeminiModel } from '@/lib/env'
 import {
   noteTitlePrompt,
   notebookHtmlPrompt,
   structureNotesPrompt,
 } from '@/lib/llm/prompts'
 
-const defaultModel = 'openai/gpt-4o'
+type GeminiError = {
+  error?: {
+    code?: number
+    message?: string
+    status?: string
+  }
+}
 
-function getAiClient() {
-  if (!env.AI_GATEWAY_API_KEY) {
-    throw new Error('AI_GATEWAY_API_KEY is not configured')
+type ChatCompletionResponse = GeminiError & {
+  choices?: Array<{ message?: { content?: string | null } }>
+}
+
+function getGeminiAuthHeaders(apiKey: string): HeadersInit {
+  // Gemini's OpenAI-compatible endpoint expects Authorization: Bearer.
+  // x-goog-api-key alone returns 400 "Missing or invalid Authorization header".
+  return { Authorization: `Bearer ${apiKey}` }
+}
+
+function parseGeminiError(body: unknown, status: number) {
+  const payload = Array.isArray(body) ? body[0] : body
+  const geminiError = payload as GeminiError
+  const message = geminiError.error?.message
+
+  if (message) {
+    return message
   }
 
-  return new OpenAI({
-    apiKey: env.AI_GATEWAY_API_KEY,
-    baseURL: getAiGatewayBaseUrl(),
-  })
+  return `Gemini request failed (${status})`
 }
 
 function extractAssistantText(content: string | null | undefined) {
@@ -34,13 +49,38 @@ function stripCodeFences(value: string) {
 }
 
 async function complete(prompt: string) {
-  const client = getAiClient()
-  const response = await client.chat.completions.create({
-    model: defaultModel,
-    messages: [{ role: 'user', content: prompt }],
+  const apiKey = getGeminiApiKey()
+
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY is not configured')
+  }
+
+  const baseUrl = getGeminiBaseUrl().replace(/\/$/, '')
+  const model = getGeminiModel()
+
+  const response = await fetch(`${baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getGeminiAuthHeaders(apiKey),
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+    }),
   })
 
-  return extractAssistantText(response.choices[0]?.message?.content)
+  const body = (await response.json()) as unknown
+
+  if (!response.ok) {
+    throw new Error(parseGeminiError(body, response.status))
+  }
+
+  const payload = (
+    Array.isArray(body) ? body[0] : body
+  ) as ChatCompletionResponse
+
+  return extractAssistantText(payload.choices?.[0]?.message?.content)
 }
 
 export async function structureTranscript(rawTranscript: string) {

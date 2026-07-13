@@ -332,10 +332,7 @@ export async function updateNoteSubject(
     note.set('subjectId', null)
   }
 
-  await Note.updateOne(
-    { _id: note._id, userId },
-    { subjectId: note.subjectId },
-  )
+  await Note.updateOne({ _id: note._id, userId }, { subjectId: note.subjectId })
 
   return toNoteSummary(note)
 }
