@@ -9,6 +9,8 @@ import {
   Copy,
   FolderOpen,
   MoreHorizontal,
+  Plus,
+  Settings2,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -296,6 +298,133 @@ function NoteCards({
   )
 }
 
+function SubjectCard({
+  subject,
+}: {
+  subject: { id: string; name: string; noteCount: number }
+}) {
+  const trpc = useTRPC()
+  const queryClient = useQueryClient()
+  const [deleteOpen, setDeleteOpen] = useState(false)
+
+  const notesHref = `/app?subjectId=${subject.id}`
+  const manageHref = `/app/subjects/${subject.id}`
+  const newNoteHref = `/app/new?subjectId=${subject.id}`
+
+  const deleteMutation = useMutation(
+    trpc.subjects.delete.mutationOptions({
+      onSuccess: async () => {
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: trpc.subjects.list.queryKey(),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: trpc.notes.list.queryKey(),
+          }),
+        ])
+        toast.success('Subject deleted')
+      },
+      onError: (error) => {
+        showErrorToast(
+          'Could not delete subject',
+          error,
+          'Unable to delete this subject.',
+        )
+      },
+    }),
+  )
+
+  return (
+    <>
+      <Card className="hover:bg-muted/40 h-full transition-colors">
+        <CardHeader className="gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <Link
+              href={notesHref}
+              className="min-w-0 flex-1"
+              onClick={() => triggerRouteProgressStart(notesHref)}
+            >
+              <CardTitle className="text-base hover:underline">
+                {subject.name}
+              </CardTitle>
+            </Link>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label="Subject actions"
+                >
+                  <MoreHorizontal />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-48">
+                <DropdownMenuGroup>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href={newNoteHref}
+                      onClick={() => triggerRouteProgressStart(newNoteHref)}
+                    >
+                      <Plus />
+                      New note
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href={manageHref}
+                      onClick={() => triggerRouteProgressStart(manageHref)}
+                    >
+                      <Settings2 />
+                      Manage subject
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  <Trash2 />
+                  Delete subject
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <CardDescription>
+            {subject.noteCount} {subject.noteCount === 1 ? 'note' : 'notes'}
+          </CardDescription>
+        </CardHeader>
+      </Card>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this subject?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Notes in this subject will be kept but removed from the folder.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate({ subjectId: subject.id })}
+            >
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete subject'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
+
 function DashboardSubjects() {
   const trpc = useTRPC()
   const subjectsQuery = useQuery(trpc.subjects.list.queryOptions())
@@ -350,45 +479,58 @@ function DashboardSubjects() {
         Choose a subject to browse its notes.
       </p>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {subjects.map((subject) => {
-          const href = `/app?subjectId=${subject.id}`
-
-          return (
-            <Link
-              key={subject.id}
-              href={href}
-              onClick={() => triggerRouteProgressStart(href)}
-            >
-              <Card className="hover:bg-muted/40 h-full transition-colors">
-                <CardHeader>
-                  <CardTitle className="text-base">{subject.name}</CardTitle>
-                  <CardDescription>
-                    {subject.noteCount}{' '}
-                    {subject.noteCount === 1 ? 'note' : 'notes'}
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
-          )
-        })}
+        {subjects.map((subject) => (
+          <SubjectCard key={subject.id} subject={subject} />
+        ))}
 
         {unassignedCount > 0 ? (
-          <Link
-            href={`/app?subjectId=${unassignedSubjectId}`}
-            onClick={() =>
-              triggerRouteProgressStart(`/app?subjectId=${unassignedSubjectId}`)
-            }
-          >
-            <Card className="hover:bg-muted/40 h-full transition-colors">
-              <CardHeader>
-                <CardTitle className="text-base">Unassigned</CardTitle>
-                <CardDescription>
-                  {unassignedCount} {unassignedCount === 1 ? 'note' : 'notes'}{' '}
-                  without a subject
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
+          <Card className="hover:bg-muted/40 h-full transition-colors">
+            <CardHeader className="gap-3">
+              <div className="flex items-start justify-between gap-3">
+                <Link
+                  href={`/app?subjectId=${unassignedSubjectId}`}
+                  className="min-w-0 flex-1"
+                  onClick={() =>
+                    triggerRouteProgressStart(
+                      `/app?subjectId=${unassignedSubjectId}`,
+                    )
+                  }
+                >
+                  <CardTitle className="text-base hover:underline">
+                    Unassigned
+                  </CardTitle>
+                </Link>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-sm"
+                      aria-label="Unassigned notes actions"
+                    >
+                      <MoreHorizontal />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-48">
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/app/new"
+                        onClick={() => triggerRouteProgressStart('/app/new')}
+                      >
+                        <Plus />
+                        New note
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <CardDescription>
+                {unassignedCount} {unassignedCount === 1 ? 'note' : 'notes'}{' '}
+                without a subject
+              </CardDescription>
+            </CardHeader>
+          </Card>
         ) : null}
       </div>
     </div>

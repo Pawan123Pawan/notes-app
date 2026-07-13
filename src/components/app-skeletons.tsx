@@ -35,8 +35,11 @@ export function NotesGridSkeleton({ count = 6 }: { count?: number }) {
 export function SubjectCardSkeleton() {
   return (
     <Card>
-      <CardHeader className="gap-2">
-        <Skeleton className="h-5 w-2/5" />
+      <CardHeader className="gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <Skeleton className="h-5 w-2/5" />
+          <Skeleton className="size-7 shrink-0 rounded-md" />
+        </div>
         <Skeleton className="h-4 w-16" />
       </CardHeader>
     </Card>
