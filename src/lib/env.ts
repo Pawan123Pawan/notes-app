@@ -8,6 +8,9 @@ const envSchema = z.object({
       (url) => url.startsWith('mongodb://') || url.startsWith('mongodb+srv://'),
       { message: 'DATABASE_URL must be a MongoDB connection string' },
     ),
+  BETTER_AUTH_SECRET: z.string().min(32),
+  BETTER_AUTH_URL: z.string().optional(),
+  NEXT_PUBLIC_APP_URL: z.string(),
 })
 
 function loadEnv() {
@@ -24,3 +27,7 @@ function loadEnv() {
 }
 
 export const env = loadEnv()
+
+export function getAppUrl() {
+  return env.BETTER_AUTH_URL ?? env.NEXT_PUBLIC_APP_URL
+}

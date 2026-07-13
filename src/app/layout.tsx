@@ -19,8 +19,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Hello',
-  description: 'Hello world.',
+  title: 'Notes App',
+  description:
+    'Turn YouTube videos and transcripts into structured study notes and handwritten notebooks.',
 }
 
 export default function RootLayout({ children }: React.PropsWithChildren) {
