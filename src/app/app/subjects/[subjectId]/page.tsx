@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 
+import { SubjectDetailSkeleton } from '@/components/app-skeletons'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -58,7 +59,7 @@ export default async function SubjectPage({ params }: SubjectPageProps) {
         description={`${subject.noteCount} ${subject.noteCount === 1 ? 'note' : 'notes'} in this folder.`}
       />
 
-      <Suspense>
+      <Suspense fallback={<SubjectDetailSkeleton />}>
         <SubjectDetailView subjectId={subjectId} />
       </Suspense>
     </PageContainer>

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 
+import { NewNoteFormSkeleton } from '@/components/app-skeletons'
 import { PageContainer } from '@/components/ui/page-container'
 import { PageHeader } from '@/components/ui/page-header'
 
@@ -19,7 +20,7 @@ export default function NewNotePage() {
         title="New note"
         description="Upload a transcript file or paste a YouTube URL to generate structured study notes."
       />
-      <Suspense>
+      <Suspense fallback={<NewNoteFormSkeleton />}>
         <NewNoteForm />
       </Suspense>
     </PageContainer>

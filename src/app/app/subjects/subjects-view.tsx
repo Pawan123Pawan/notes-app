@@ -6,6 +6,7 @@ import { FolderOpen, Plus } from 'lucide-react'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
+import { SubjectsGridSkeleton } from '@/components/app-skeletons'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -21,7 +22,6 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { Spinner } from '@/components/ui/spinner'
 import { triggerRouteProgressStart } from '@/lib/route-progress'
 import { showErrorToast } from '@/lib/utils'
 import { createSubjectInput } from '@/trpc/routers/subjects/subjects.input'
@@ -119,12 +119,7 @@ export function SubjectsView() {
       </Card>
 
       {subjectsQuery.isLoading ? (
-        <div className="flex items-center gap-2 py-8">
-          <Spinner />
-          <span className="text-muted-foreground text-sm">
-            Loading subjects...
-          </span>
-        </div>
+        <SubjectsGridSkeleton />
       ) : subjects.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-start gap-3 py-8">

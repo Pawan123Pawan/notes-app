@@ -3,11 +3,12 @@
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 
+import { NotesGridSkeleton } from '@/components/app-skeletons'
 import { Badge } from '@/components/ui/badge'
 import { BaseButton } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { triggerRouteProgressStart } from '@/lib/route-progress'
 import type { NoteStatus } from '@/db/schema/note.constants'
+import { triggerRouteProgressStart } from '@/lib/route-progress'
 import { useTRPC } from '@/trpc/react'
 
 const statusLabels: Record<NoteStatus, string> = {
@@ -29,7 +30,7 @@ export function RecentNotes() {
   const notes = notesQuery.data?.items ?? []
 
   if (notesQuery.isLoading) {
-    return <p className="text-muted-foreground text-sm">Loading notes...</p>
+    return <NotesGridSkeleton />
   }
 
   if (notes.length === 0) {

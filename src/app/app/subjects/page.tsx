@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 
+import { SubjectsViewSkeleton } from '@/components/app-skeletons'
 import { PageContainer } from '@/components/ui/page-container'
 import { PageHeader } from '@/components/ui/page-header'
 
@@ -18,7 +19,7 @@ export default function SubjectsPage() {
         title="Subjects"
         description="Group notes by course, topic, or exam prep."
       />
-      <Suspense>
+      <Suspense fallback={<SubjectsViewSkeleton />}>
         <SubjectsView />
       </Suspense>
     </PageContainer>

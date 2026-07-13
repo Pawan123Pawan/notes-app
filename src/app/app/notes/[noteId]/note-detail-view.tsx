@@ -8,6 +8,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { toast } from 'sonner'
 
+import { NoteDetailSkeleton } from '@/components/app-skeletons'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -139,12 +140,7 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
   const subjects = subjectsQuery.data ?? []
 
   if (noteQuery.isLoading) {
-    return (
-      <div className="flex items-center gap-2 py-12">
-        <Spinner />
-        <span className="text-muted-foreground text-sm">Loading note...</span>
-      </div>
-    )
+    return <NoteDetailSkeleton />
   }
 
   if (noteQuery.isError || !note) {

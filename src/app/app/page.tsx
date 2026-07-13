@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Suspense } from 'react'
 
+import { NotesGridSkeleton } from '@/components/app-skeletons'
 import { BaseButton } from '@/components/ui/button'
 import { PageContainer } from '@/components/ui/page-container'
 import { PageHeader } from '@/components/ui/page-header'
@@ -28,7 +29,7 @@ export default async function AppDashboardPage() {
           </BaseButton>
         }
       />
-      <Suspense>
+      <Suspense fallback={<NotesGridSkeleton />}>
         <RecentNotes />
       </Suspense>
     </PageContainer>

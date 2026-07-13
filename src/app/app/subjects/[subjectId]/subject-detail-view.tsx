@@ -8,6 +8,10 @@ import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import {
+  NotesGridSkeleton,
+  SubjectDetailSkeleton,
+} from '@/components/app-skeletons'
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -28,7 +32,6 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { Spinner } from '@/components/ui/spinner'
 import type { NoteStatus } from '@/db/schema/note.constants'
 import { triggerRouteProgressStart } from '@/lib/route-progress'
 import { showErrorToast } from '@/lib/utils'
@@ -136,14 +139,7 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
   })
 
   if (subjectQuery.isLoading) {
-    return (
-      <div className="flex items-center gap-2 py-12">
-        <Spinner />
-        <span className="text-muted-foreground text-sm">
-          Loading subject...
-        </span>
-      </div>
-    )
+    return <SubjectDetailSkeleton />
   }
 
   if (subjectQuery.isError || !subjectQuery.data) {
@@ -233,7 +229,7 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
         </div>
 
         {notesQuery.isLoading ? (
-          <p className="text-muted-foreground text-sm">Loading notes...</p>
+          <NotesGridSkeleton count={3} />
         ) : notes.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-start gap-4 py-8">

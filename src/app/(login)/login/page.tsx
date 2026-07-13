@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 
+import { AuthFormSkeleton } from '@/components/app-skeletons'
+
 import { LoginForm } from './login-form'
 
 export const metadata: Metadata = {
@@ -10,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<AuthFormSkeleton />}>
       <LoginForm />
     </Suspense>
   )

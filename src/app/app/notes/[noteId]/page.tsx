@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 
+import { NoteDetailSkeleton } from '@/components/app-skeletons'
 import { PageContainer } from '@/components/ui/page-container'
 
 import { NoteDetailView } from './note-detail-view'
@@ -19,7 +20,7 @@ export default async function NotePage({ params }: NotePageProps) {
 
   return (
     <PageContainer>
-      <Suspense>
+      <Suspense fallback={<NoteDetailSkeleton />}>
         <NoteDetailView noteId={noteId} />
       </Suspense>
     </PageContainer>
