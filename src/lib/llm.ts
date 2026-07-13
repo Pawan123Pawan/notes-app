@@ -4,6 +4,7 @@ import {
   notebookHtmlPrompt,
   structureNotesPrompt,
 } from '@/lib/llm/prompts'
+import { ensureA4NotebookHtml } from '@/lib/notebook-html'
 
 type GeminiError = {
   error?: {
@@ -15,6 +16,11 @@ type GeminiError = {
 
 type ChatCompletionResponse = GeminiError & {
   choices?: Array<{ message?: { content?: string | null } }>
+}
+
+type CompleteOptions = {
+  temperature?: number
+  maxTokens?: number
 }
 
 function getGeminiAuthHeaders(apiKey: string): HeadersInit {
@@ -48,7 +54,7 @@ function stripCodeFences(value: string) {
   return fenced ? fenced[1].trim() : value.trim()
 }
 
-async function complete(prompt: string) {
+async function complete(prompt: string, options: CompleteOptions = {}) {
   const apiKey = getGeminiApiKey()
 
   if (!apiKey) {
@@ -57,6 +63,8 @@ async function complete(prompt: string) {
 
   const baseUrl = getGeminiBaseUrl().replace(/\/$/, '')
   const model = getGeminiModel()
+  const temperature = options.temperature ?? 0.35
+  const maxTokens = options.maxTokens ?? 16_384
 
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
@@ -66,6 +74,8 @@ async function complete(prompt: string) {
     },
     body: JSON.stringify({
       model,
+      temperature,
+      max_tokens: maxTokens,
       messages: [{ role: 'user', content: prompt }],
     }),
   })
@@ -84,16 +94,25 @@ async function complete(prompt: string) {
 }
 
 export async function structureTranscript(rawTranscript: string) {
-  return complete(structureNotesPrompt(rawTranscript))
+  return complete(structureNotesPrompt(rawTranscript), {
+    temperature: 0.3,
+    maxTokens: 16_384,
+  })
 }
 
 export async function renderNotebookHtml(structuredNotes: string) {
-  const html = await complete(notebookHtmlPrompt(structuredNotes))
-  return stripCodeFences(html)
+  const html = await complete(notebookHtmlPrompt(structuredNotes), {
+    temperature: 0.45,
+    maxTokens: 24_576,
+  })
+  return ensureA4NotebookHtml(stripCodeFences(html))
 }
 
 export async function generateNoteTitle(structuredNotes: string) {
   const preview = structuredNotes.slice(0, 500)
-  const title = await complete(noteTitlePrompt(preview))
+  const title = await complete(noteTitlePrompt(preview), {
+    temperature: 0.2,
+    maxTokens: 128,
+  })
   return title.replace(/^["']|["']$/g, '').slice(0, 60)
 }

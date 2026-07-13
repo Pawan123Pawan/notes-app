@@ -265,8 +265,8 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
             <div>
               <p className="font-medium">Creating your notebook</p>
               <p className="text-muted-foreground text-sm">
-                Structuring study notes and rendering handwritten pages. This
-                can take a minute.
+                Generating detailed Hindi notes and colorful A4 notebook pages.
+                This can take a few minutes for better quality.
               </p>
             </div>
           </CardContent>
@@ -314,11 +314,11 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
 
           <TabsContent value="notebook" className="mt-4">
             <Card>
-              <CardContent className="p-0">
+              <CardContent className="bg-muted/40 overflow-auto p-4 sm:p-6">
                 <iframe
                   title={`${note.title} notebook`}
                   srcDoc={note.notebookHtml}
-                  className="bg-muted/30 min-h-[80vh] w-full rounded-lg border-0"
+                  className="mx-auto block min-h-[85vh] w-full max-w-[220mm] rounded-md border-0 bg-transparent"
                 />
               </CardContent>
             </Card>
