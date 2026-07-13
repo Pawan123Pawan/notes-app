@@ -79,6 +79,7 @@ When a UI control applies the **same operation** to **many** selected rows (or m
 
 ## Additional references
 
+- **[references/mongoose-mongodb.md](references/mongoose-mongodb.md)** — MongoDB + Mongoose only; single `connectDB()`; Better Auth via `@/db`; not Prisma/Postgres.
 - **[references/refactoring-principles.md](references/refactoring-principles.md)** — refactors (auth middleware, **`workspaceId`**, checklist against this skill + frontend callers).
 
 Add new topical files under **`references/`** as backend scope grows (e.g. workers, auth callbacks, webhooks). Link them from this section.

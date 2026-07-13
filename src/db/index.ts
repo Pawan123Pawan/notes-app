@@ -2,6 +2,8 @@ import mongoose from 'mongoose'
 
 import { env } from '@/lib/env'
 
+import type { Db, MongoClient } from 'mongodb'
+
 type MongooseCache = {
   conn: typeof mongoose | null
   promise: Promise<typeof mongoose> | null
@@ -38,4 +40,23 @@ export async function connectDB() {
   }
 
   return cached.conn
+}
+
+/** Native MongoDB client from the shared Mongoose connection (Better Auth adapter). */
+export async function getAuthMongoClient(): Promise<MongoClient> {
+  await connectDB()
+  // Mongoose bundles its own mongodb types; cast at the Better Auth boundary.
+  return mongoose.connection.getClient() as unknown as MongoClient
+}
+
+/** Native MongoDB database from the shared Mongoose connection (Better Auth adapter). */
+export async function getAuthMongoDb(): Promise<Db> {
+  await connectDB()
+  const db = mongoose.connection.db
+
+  if (!db) {
+    throw new Error('MongoDB database is not available')
+  }
+
+  return db as unknown as Db
 }

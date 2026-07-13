@@ -5,7 +5,7 @@ import { getAppUrl } from '@/lib/env'
 
 async function createAuth() {
   const { mongodbAdapter } = await import('better-auth/adapters/mongodb')
-  const { getAuthMongoClient, getAuthMongoDb } = await import('@/lib/mongodb')
+  const { getAuthMongoClient, getAuthMongoDb } = await import('@/db')
 
   const client = await getAuthMongoClient()
   const db = await getAuthMongoDb()

@@ -5,9 +5,13 @@ import { useMutation } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
 import { authClient } from '@/lib/auth-client'
-import { showErrorToast } from '@/lib/utils'
+import { cn, showErrorToast } from '@/lib/utils'
 
-export function SignOutButton() {
+type SignOutButtonProps = {
+  className?: string
+}
+
+export function SignOutButton({ className }: SignOutButtonProps) {
   const router = useRouter()
 
   const signOutMutation = useMutation({
@@ -29,6 +33,7 @@ export function SignOutButton() {
   return (
     <Button
       variant="outline"
+      className={cn(className)}
       loading={signOutMutation.isPending}
       onClick={() => signOutMutation.mutate()}
     >

@@ -17,6 +17,8 @@ skills:
     load: "node_modules/@trpc/client/skills/client-setup/SKILL.md"
   - task: ".env files, secrets, loading env in Node"
     load: "node_modules/dotenv/skills/dotenv/SKILL.md"
+  - task: "Mongoose models, MongoDB connection, Better Auth database adapter"
+    load: ".agents/skills/backend/references/mongoose-mongodb.md"
 <!-- intent-skills:end -->
 
 <!-- BEGIN:app-router-routes -->
@@ -125,10 +127,14 @@ Import **`dayjs` only from `@/lib/dayjs`** (or **`src/lib/dayjs.ts`**). That mod
 <!-- END:formatting -->
 
 <!-- BEGIN:mongoose-schema-workflow -->
-## Mongoose schema workflow
+## Mongoose / MongoDB (this app)
 
-- Define Mongoose models under `src/db/schema/`.
-- Better Auth manages its own auth collections via the MongoDB adapter (no schema generation step).
-- Call `connectDB()` from `@/db` before querying Mongoose models in services.
+- **Database:** MongoDB only via **Mongoose**. Do **not** add Prisma, Drizzle, PostgreSQL, or other SQL adapters.
+- **Connection:** use **`connectDB()`** from **`@/db`** (`src/db/index.ts`) everywhere — app models, tRPC services, workers, and Better Auth. Do **not** create a separate **`src/lib/mongodb.ts`** or second **`MongoClient`**.
+- **Better Auth:** **`mongodbAdapter`** with **`getAuthMongoDb()`** / **`getAuthMongoClient()`** from **`@/db`** (native driver handles reused from the Mongoose connection).
+- **Models:** define Mongoose schemas under **`src/db/schema/`**; call **`connectDB()`** before queries in services.
+- **Env:** **`DATABASE_URL`** must be a MongoDB URI (`mongodb://` or `mongodb+srv://`) — validated in **`src/lib/env.ts`**.
+- **Not the database:** **`route-progress`** modules (`src/lib/route-progress.ts`, `src/hooks/use-route-transition-progress.ts`, `src/components/route-transition-progress.tsx`) are **navigation UI** for the AppShell top bar during `/app` page transitions — not Postgres or MongoDB.
 - After changing any Mongoose schema, restart the dev server so models reload cleanly.
+- Detail: **`.agents/skills/backend/references/mongoose-mongodb.md`**
 <!-- END:mongoose-schema-workflow -->
