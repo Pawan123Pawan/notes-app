@@ -92,37 +92,58 @@ body {
   margin: 0;
 }
 @media print {
-  body { background: white; }
+  html, body {
+    background: white !important;
+  }
+  body {
+    padding: 0 !important;
+    zoom: 1 !important;
+  }
   .notebook-page {
-    margin: 0;
-    box-shadow: none;
+    margin: 0 !important;
+    box-shadow: none !important;
     page-break-after: always;
   }
 }
 `.trim()
 
-/**
- * Guarantees A4 page sizing and colorful notebook styles even if the LLM
- * returns incomplete CSS.
- */
-export function ensureA4NotebookHtml(html: string) {
-  const trimmed = html.trim()
-  if (!trimmed) {
-    return trimmed
+/** PDF-reader chrome for on-screen viewing (print stays true A4). */
+const NOTEBOOK_PDF_VIEW_CSS = `
+@media screen {
+  html, body {
+    margin: 0;
+    background: #525659;
+  }
+  body {
+    padding: 20px 0 40px;
+    zoom: var(--notebook-zoom, 1);
+  }
+  .notebook-page {
+    margin: 16px auto !important;
+    box-shadow:
+      0 1px 1px rgba(0, 0, 0, 0.08),
+      0 4px 12px rgba(0, 0, 0, 0.22),
+      0 12px 28px rgba(0, 0, 0, 0.18) !important;
+  }
+}
+`.trim()
+
+/** CSS pixel width of one A4 page at 96dpi. */
+export const NOTEBOOK_A4_WIDTH_PX = (210 * 96) / 25.4
+
+function injectHeadStyle(html: string, id: string, css: string) {
+  const styleTag = `<style id="${id}">\n${css}\n</style>`
+
+  if (new RegExp(`id=["']${id}["']`).test(html)) {
+    return html
   }
 
-  const styleTag = `<style id="a4-notebook-styles">\n${A4_NOTEBOOK_CSS}\n</style>`
-
-  if (/id=["']a4-notebook-styles["']/.test(trimmed)) {
-    return trimmed
+  if (/<\/head>/i.test(html)) {
+    return html.replace(/<\/head>/i, `${styleTag}</head>`)
   }
 
-  if (/<\/head>/i.test(trimmed)) {
-    return trimmed.replace(/<\/head>/i, `${styleTag}</head>`)
-  }
-
-  if (/<html[^>]*>/i.test(trimmed)) {
-    return trimmed.replace(
+  if (/<html[^>]*>/i.test(html)) {
+    return html.replace(
       /<html[^>]*>/i,
       (match) => `${match}<head>${styleTag}</head>`,
     )
@@ -136,7 +157,61 @@ export function ensureA4NotebookHtml(html: string) {
 ${styleTag}
 </head>
 <body>
-${trimmed}
+${html}
 </body>
 </html>`
+}
+
+/**
+ * Guarantees A4 page sizing and colorful notebook styles even if the LLM
+ * returns incomplete CSS.
+ */
+export function ensureA4NotebookHtml(html: string) {
+  const trimmed = html.trim()
+  if (!trimmed) {
+    return trimmed
+  }
+
+  return injectHeadStyle(trimmed, 'a4-notebook-styles', A4_NOTEBOOK_CSS)
+}
+
+export type PrepareNotebookForViewOptions = {
+  /** Scale factor for on-screen reading (1 = 100%). */
+  zoom?: number
+}
+
+/**
+ * Prepares stored notebook HTML for a PDF-style reader: gray canvas, centered
+ * A4 pages, and configurable zoom. Print output stays true A4.
+ */
+export function prepareNotebookForView(
+  html: string,
+  options: PrepareNotebookForViewOptions = {},
+) {
+  const zoom = options.zoom ?? 1
+  const withA4 = ensureA4NotebookHtml(html)
+  if (!withA4) {
+    return withA4
+  }
+
+  const withPdfChrome = injectHeadStyle(
+    withA4,
+    'notebook-pdf-view',
+    NOTEBOOK_PDF_VIEW_CSS,
+  )
+
+  const zoomStyle = `<style id="notebook-zoom-var">:root{--notebook-zoom:${zoom};}</style>`
+
+  if (/id=["']notebook-zoom-var["']/.test(withPdfChrome)) {
+    return withPdfChrome.replace(
+      /<style id=["']notebook-zoom-var["']>[\s\S]*?<\/style>/i,
+      zoomStyle,
+    )
+  }
+
+  if (/<\/head>/i.test(withPdfChrome)) {
+    return withPdfChrome.replace(/<\/head>/i, `${zoomStyle}</head>`)
+  }
+
+  return `${zoomStyle}${withPdfChrome}`
 }
