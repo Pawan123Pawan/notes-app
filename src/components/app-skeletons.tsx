@@ -216,7 +216,7 @@ export function AppPageSkeleton() {
         </div>
         <Skeleton className="h-9 w-28 shrink-0" />
       </div>
-      <NotesGridSkeleton />
+      <SubjectsGridSkeleton />
     </div>
   )
 }
