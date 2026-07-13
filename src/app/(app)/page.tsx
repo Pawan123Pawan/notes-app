@@ -2,9 +2,9 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 
 export const metadata: Metadata = {
-  title: 'Next Vibe App Starter',
+  title: 'Notes App',
   description:
-    'Production-ready Next.js template with Better Auth, Drizzle and PostgreSQL, TanStack Query, and tRPC.',
+    'A notes app built with Next.js, Better Auth, MongoDB, and tRPC.',
 }
 
 export default function HomePage() {

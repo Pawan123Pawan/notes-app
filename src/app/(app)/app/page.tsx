@@ -1,33 +1,17 @@
 import type { Metadata } from 'next'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-} from '@/components/ui/breadcrumb'
-import { PageContainer } from '@/components/ui/page-container'
-import { PageHeader } from '@/components/ui/page-header'
 
 export const metadata: Metadata = {
-  title: 'Dashboard',
-  description: 'Overview of your account. Build your main product UI here.',
+  title: 'App',
+  description: 'Your notes app home.',
 }
 
 export default function AppHomePage() {
   return (
-    <PageContainer>
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbPage>Dashboard</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      <PageHeader
-        title="Dashboard"
-        description="Build your main product experience here."
-      />
-    </PageContainer>
+    <main className="flex min-h-svh flex-col p-6">
+      <h1 className="text-2xl font-semibold tracking-tight">Notes App</h1>
+      <p className="text-muted-foreground mt-2 text-sm">
+        Start building your product here.
+      </p>
+    </main>
   )
 }

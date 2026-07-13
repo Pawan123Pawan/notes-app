@@ -20,9 +20,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Next Vibe App Starter',
+  title: 'Notes App',
   description:
-    'Production-ready Next.js template with Better Auth, Drizzle and PostgreSQL, TanStack Query, and tRPC—focus on your product, not plumbing.',
+    'A notes app built with Next.js, Better Auth, MongoDB, and tRPC.',
 }
 
 export default function RootLayout({ children }: React.PropsWithChildren) {

@@ -1,31 +1,36 @@
 import 'server-only'
 
-import mongoose from 'mongoose'
+import { MongoClient } from 'mongodb'
 
 import { env } from '@/lib/env'
 
-const globalForMongoose = globalThis as typeof globalThis & {
-  mongooseConn?: Promise<typeof mongoose>
+const globalForMongo = globalThis as typeof globalThis & {
+  mongoClient?: MongoClient
+  mongoClientPromise?: Promise<MongoClient>
 }
 
-export function connectDB() {
-  if (mongoose.connection.readyState >= 1) {
-    return Promise.resolve(mongoose)
+function getClientPromise() {
+  if (!globalForMongo.mongoClientPromise) {
+    globalForMongo.mongoClientPromise = MongoClient.connect(
+      env.DATABASE_URL,
+    ).then((client) => {
+      globalForMongo.mongoClient = client
+      return client
+    })
   }
 
-  if (!globalForMongoose.mongooseConn) {
-    globalForMongoose.mongooseConn = mongoose
-      .connect(env.DATABASE_URL)
-      .then(() => mongoose)
-  }
-
-  return globalForMongoose.mongooseConn
+  return globalForMongo.mongoClientPromise
 }
 
-export function getMongoDb() {
-  return mongoose.connection.getClient().db()
+export async function connectDB() {
+  return getClientPromise()
 }
 
-export function getMongoClient() {
-  return mongoose.connection.getClient()
+export async function getMongoClient() {
+  return connectDB()
+}
+
+export async function getMongoDb() {
+  const client = await connectDB()
+  return client.db()
 }
