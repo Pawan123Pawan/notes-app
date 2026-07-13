@@ -1,6 +1,4 @@
-import { boolean, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
-
-import { user } from './auth'
+import { Schema, model, models } from 'mongoose'
 
 export const appearanceThemeEnum = ['system', 'light', 'dark'] as const
 export const appearanceBaseColorEnum = [
@@ -61,80 +59,79 @@ export const userNotificationDefaults: UserNotificationSettings = {
   issueAssignedToMe: true,
 }
 
-export const userAppearance = pgTable(
-  'user_appearance',
+const userAppearanceSchema = new Schema(
   {
-    userId: text('user_id')
-      .primaryKey()
-      .references(() => user.id, { onDelete: 'cascade' }),
-    theme: text('theme').$type<AppearanceTheme>().notNull().default('system'),
-    baseColor: text('base_color')
-      .$type<AppearanceBaseColor>()
-      .notNull()
-      .default('neutral'),
-    accentColor: text('accent_color')
-      .$type<AppearanceAccentColor>()
-      .notNull()
-      .default('blue'),
-    createdAt: timestamp('created_at', { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true })
-      .defaultNow()
-      .$onUpdate(() => new Date())
-      .notNull(),
+    userId: { type: String, required: true, unique: true, index: true },
+    theme: {
+      type: String,
+      enum: appearanceThemeEnum,
+      required: true,
+      default: 'system',
+    },
+    baseColor: {
+      type: String,
+      enum: appearanceBaseColorEnum,
+      required: true,
+      default: 'neutral',
+    },
+    accentColor: {
+      type: String,
+      enum: appearanceAccentColorEnum,
+      required: true,
+      default: 'blue',
+    },
   },
-  (table) => [index('user_appearance_user_idx').on(table.userId)],
+  { timestamps: true, collection: 'user_appearance' },
 )
 
-export const userNotificationSettings = pgTable(
-  'user_notification_settings',
+const userNotificationSettingsSchema = new Schema(
   {
-    userId: text('user_id')
-      .primaryKey()
-      .references(() => user.id, { onDelete: 'cascade' }),
-    authNewLoginDetected: boolean('auth_new_login_detected')
-      .notNull()
-      .default(true),
-    authPasswordChanged: boolean('auth_password_changed')
-      .notNull()
-      .default(true),
-    authTwoFactorStatusChanged: boolean('auth_two_factor_status_changed')
-      .notNull()
-      .default(true),
-    authAccountDeletionInitiated: boolean('auth_account_deletion_initiated')
-      .notNull()
-      .default(true),
-    workspaceInvitationReceived: boolean('workspace_invitation_received')
-      .notNull()
-      .default(true),
-    workspaceInvitationResponse: boolean('workspace_invitation_response')
-      .notNull()
-      .default(true),
-    workspaceMemberJoined: boolean('workspace_member_joined')
-      .notNull()
-      .default(true),
-    workspaceMemberLeft: boolean('workspace_member_left')
-      .notNull()
-      .default(true),
-    workspaceMemberRemoved: boolean('workspace_member_removed')
-      .notNull()
-      .default(true),
-    workspaceRoleChanged: boolean('workspace_role_changed')
-      .notNull()
-      .default(true),
-    workspaceSettingsUpdated: boolean('workspace_settings_updated')
-      .notNull()
-      .default(true),
-    workspaceDeleted: boolean('workspace_deleted').notNull().default(true),
-    issueAssignedToMe: boolean('issue_assigned_to_me').notNull().default(true),
-    createdAt: timestamp('created_at', { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true })
-      .defaultNow()
-      .$onUpdate(() => new Date())
-      .notNull(),
+    userId: { type: String, required: true, unique: true, index: true },
+    authNewLoginDetected: { type: Boolean, required: true, default: true },
+    authPasswordChanged: { type: Boolean, required: true, default: true },
+    authTwoFactorStatusChanged: {
+      type: Boolean,
+      required: true,
+      default: true,
+    },
+    authAccountDeletionInitiated: {
+      type: Boolean,
+      required: true,
+      default: true,
+    },
+    workspaceInvitationReceived: {
+      type: Boolean,
+      required: true,
+      default: true,
+    },
+    workspaceInvitationResponse: {
+      type: Boolean,
+      required: true,
+      default: true,
+    },
+    workspaceMemberJoined: { type: Boolean, required: true, default: true },
+    workspaceMemberLeft: { type: Boolean, required: true, default: true },
+    workspaceMemberRemoved: { type: Boolean, required: true, default: true },
+    workspaceRoleChanged: { type: Boolean, required: true, default: true },
+    workspaceSettingsUpdated: {
+      type: Boolean,
+      required: true,
+      default: true,
+    },
+    workspaceDeleted: { type: Boolean, required: true, default: true },
+    issueAssignedToMe: { type: Boolean, required: true, default: true },
   },
-  (table) => [index('user_notification_settings_user_idx').on(table.userId)],
+  { timestamps: true, collection: 'user_notification_settings' },
 )
+
+export const UserAppearance =
+  models.UserAppearance ||
+  model('UserAppearance', userAppearanceSchema, 'user_appearance')
+
+export const UserNotificationSettings =
+  models.UserNotificationSettings ||
+  model(
+    'UserNotificationSettings',
+    userNotificationSettingsSchema,
+    'user_notification_settings',
+  )

@@ -4,7 +4,11 @@ import * as z from 'zod'
 export const env = createEnv({
   server: {
     APP_NAME: z.string().min(1).default('Next Vibe App Starter'),
-    DATABASE_URL: z.union([z.string().startsWith('postgresql://'), z.url()]),
+    DATABASE_URL: z.union([
+      z.string().startsWith('mongodb://'),
+      z.string().startsWith('mongodb+srv://'),
+      z.url(),
+    ]),
     BETTER_AUTH_SECRET: z.string().min(32),
     BETTER_AUTH_URL: z.url().optional().default('http://localhost:3000'),
     BLOB_READ_WRITE_TOKEN: z.string().optional(),

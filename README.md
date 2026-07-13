@@ -1,13 +1,13 @@
 # Next Vibe App Starter
 
-Production-ready Next.js starter for multi-tenant SaaS apps with Better Auth, PostgreSQL + Drizzle, and a modern app shell.
+Production-ready Next.js starter for SaaS apps with Better Auth, MongoDB + Mongoose, and a modern app shell.
 
 ## Tech Stack
 
 - Next.js (App Router)
 - React + TypeScript
 - Better Auth (email/password, Google OAuth, organizations, 2FA, admin)
-- PostgreSQL + Drizzle ORM
+- MongoDB + Mongoose
 - TanStack Query
 - Tailwind CSS + shadcn/ui
 - Resend + React Email
@@ -25,7 +25,7 @@ Production-ready Next.js starter for multi-tenant SaaS apps with Better Auth, Po
 ## Requirements
 
 - Bun (recommended; `bun.lock` is included)
-- PostgreSQL database
+- MongoDB database
 
 ## Quick Start
 
@@ -38,7 +38,7 @@ bun install
 2. Create `.env` in the project root:
 
 ```env
-DATABASE_URL=postgresql://...
+DATABASE_URL=mongodb://localhost:27017/next-vibe-app-starter
 BETTER_AUTH_SECRET=replace-with-a-long-random-secret-at-least-32-chars
 BETTER_AUTH_URL=http://localhost:3000
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -51,14 +51,7 @@ GOOGLE_CLIENT_SECRET=
 BLOB_READ_WRITE_TOKEN=
 ```
 
-3. Generate and run DB migrations:
-
-```bash
-bun run db:generate
-bun run db:migrate
-```
-
-4. Start the app:
+3. Start the app:
 
 ```bash
 bun run dev
@@ -74,9 +67,6 @@ Open [http://localhost:3000](http://localhost:3000).
 - `bun run lint` - Run ESLint
 - `bun run typecheck` - Run TypeScript checks
 - `bun run format` - Format repository with Prettier
-- `bun run db:generate` - Generate Drizzle migrations
-- `bun run db:migrate` - Run Drizzle migrations
-- `bun run auth:generate` - Generate Better Auth schema file
 - `bun run email:dev` - Preview React Email templates locally
 
 ## Notes

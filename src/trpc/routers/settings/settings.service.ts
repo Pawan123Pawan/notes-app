@@ -1,11 +1,9 @@
-import { eq } from 'drizzle-orm'
-
-import { db } from '@/db'
+import { connectDB } from '@/db'
 import {
-  userAppearance,
+  UserAppearance,
+  UserNotificationSettings,
   userNotificationDefaults,
   userNotificationSettingKeys,
-  userNotificationSettings,
 } from '@/db/schema'
 import type {
   AppearanceAccentColor,
@@ -13,34 +11,25 @@ import type {
   AppearanceTheme,
 } from '@/lib/appearance'
 
-const userNotificationColumns = Object.fromEntries(
-  userNotificationSettingKeys.map((key) => [
-    key,
-    userNotificationSettings[key],
-  ]),
-) as {
-  [K in (typeof userNotificationSettingKeys)[number]]: (typeof userNotificationSettings)[K]
-}
+const userNotificationSelect = userNotificationSettingKeys.join(' ')
 
 export async function getUserAppearance(userId: string): Promise<{
   theme: AppearanceTheme
   baseColor: AppearanceBaseColor
   accentColor: AppearanceAccentColor
 }> {
-  const [appearance] = await db
-    .select({
-      theme: userAppearance.theme,
-      baseColor: userAppearance.baseColor,
-      accentColor: userAppearance.accentColor,
-    })
-    .from(userAppearance)
-    .where(eq(userAppearance.userId, userId))
-    .limit(1)
+  await connectDB()
+
+  const appearance = await UserAppearance.findOne({ userId })
+    .select('theme baseColor accentColor')
+    .lean()
 
   return {
-    theme: appearance?.theme ?? 'system',
-    baseColor: appearance?.baseColor ?? 'neutral',
-    accentColor: appearance?.accentColor ?? 'blue',
+    theme: (appearance?.theme as AppearanceTheme | undefined) ?? 'system',
+    baseColor:
+      (appearance?.baseColor as AppearanceBaseColor | undefined) ?? 'neutral',
+    accentColor:
+      (appearance?.accentColor as AppearanceAccentColor | undefined) ?? 'blue',
   }
 }
 
@@ -50,38 +39,31 @@ export async function upsertUserAppearance(input: {
   baseColor: AppearanceBaseColor
   accentColor: AppearanceAccentColor
 }) {
-  const [appearance] = await db
-    .insert(userAppearance)
-    .values({
-      userId: input.userId,
+  await connectDB()
+
+  const appearance = await UserAppearance.findOneAndUpdate(
+    { userId: input.userId },
+    {
       theme: input.theme,
       baseColor: input.baseColor,
       accentColor: input.accentColor,
-    })
-    .onConflictDoUpdate({
-      target: userAppearance.userId,
-      set: {
-        theme: input.theme,
-        baseColor: input.baseColor,
-        accentColor: input.accentColor,
-        updatedAt: new Date(),
-      },
-    })
-    .returning({
-      theme: userAppearance.theme,
-      baseColor: userAppearance.baseColor,
-      accentColor: userAppearance.accentColor,
-    })
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true },
+  )
+    .select('theme baseColor accentColor')
+    .lean()
 
-  return appearance
+  return appearance!
 }
 
 export async function getUserNotificationSettings(userId: string) {
-  const [notificationSettings] = await db
-    .select(userNotificationColumns)
-    .from(userNotificationSettings)
-    .where(eq(userNotificationSettings.userId, userId))
-    .limit(1)
+  await connectDB()
+
+  const notificationSettings = await UserNotificationSettings.findOne({
+    userId,
+  })
+    .select(userNotificationSelect)
+    .lean()
 
   return notificationSettings ?? userNotificationDefaults
 }
@@ -90,20 +72,15 @@ export async function upsertUserNotificationSettings(input: {
   userId: string
   notifications: typeof userNotificationDefaults
 }) {
-  const [notificationSettings] = await db
-    .insert(userNotificationSettings)
-    .values({
-      userId: input.userId,
-      ...input.notifications,
-    })
-    .onConflictDoUpdate({
-      target: userNotificationSettings.userId,
-      set: {
-        ...input.notifications,
-        updatedAt: new Date(),
-      },
-    })
-    .returning(userNotificationColumns)
+  await connectDB()
 
-  return notificationSettings
+  const notificationSettings = await UserNotificationSettings.findOneAndUpdate(
+    { userId: input.userId },
+    input.notifications,
+    { upsert: true, new: true, setDefaultsOnInsert: true },
+  )
+    .select(userNotificationSelect)
+    .lean()
+
+  return notificationSettings!
 }

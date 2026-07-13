@@ -124,19 +124,11 @@ Import **`dayjs` only from `@/lib/dayjs`** (or **`src/lib/dayjs.ts`**). That mod
 - After making any codebase change, run `bun format` before finishing.
 <!-- END:formatting -->
 
-<!-- BEGIN:drizzle-schema-workflow -->
-## Drizzle schema workflow
+<!-- BEGIN:mongoose-schema-workflow -->
+## Mongoose schema workflow
 
-- **DO NOT** manually edit any migrations files.
-- **DO NOT** manually add any migrations files.
-- **DO NOT** manually delete any migrations files.
-- **DO NOT** manually rename any migrations files.
-- **DO NOT** manually move any migrations files.
-- **DO NOT** manually copy any migrations files.
-- **DO NOT** manually paste any migrations files.
-- **DO NOT** manually split any migrations files.
-- **DO NOT** manually merge any migrations files.
-- **DO NOT** manually commit any migrations files.
-- **DO NOT** manually push any migrations files.
-- After changing any Drizzle schema (for example under `src/db/schema/`), run `bun db:generate` before finishing.
-<!-- END:drizzle-schema-workflow -->
+- Define Mongoose models under `src/db/schema/`.
+- Better Auth manages its own auth collections via the MongoDB adapter (no schema generation step).
+- Call `connectDB()` from `@/db` before querying Mongoose models in services.
+- After changing any Mongoose schema, restart the dev server so models reload cleanly.
+<!-- END:mongoose-schema-workflow -->

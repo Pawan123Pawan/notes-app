@@ -5,14 +5,17 @@ import AuthPasswordChangedEmail from '@/emails/auth-password-changed'
 import AuthTwoFactorStatusChangedEmail from '@/emails/auth-two-factor-status-changed'
 import ResetPasswordEmail from '@/emails/reset-password'
 import WelcomeEmail from '@/emails/welcome'
+import { connectDB, getMongoClient, getMongoDb } from '@/db'
 import { betterAuth } from 'better-auth'
-import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { mongodbAdapter } from 'better-auth/adapters/mongodb'
 import { createAuthMiddleware } from 'better-auth/api'
 import { nextCookies } from 'better-auth/next-js'
 import { twoFactor, admin } from 'better-auth/plugins'
+import type { Db, MongoClient } from 'mongodb'
 import { Resend } from 'resend'
-import { db } from '@/db'
 import { env } from './env'
+
+await connectDB()
 
 export const auth = betterAuth({
   trustedOrigins: [env.NEXT_PUBLIC_APP_URL],
@@ -70,8 +73,8 @@ export const auth = betterAuth({
           }
         : undefined,
   },
-  database: drizzleAdapter(db, {
-    provider: 'pg',
+  database: mongodbAdapter(getMongoDb() as unknown as Db, {
+    client: getMongoClient() as unknown as MongoClient,
   }),
   hooks: {
     after: createAuthMiddleware(async (ctx) => {
