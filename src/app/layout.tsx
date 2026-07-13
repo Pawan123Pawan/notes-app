@@ -2,10 +2,9 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono, Inter } from 'next/font/google'
 import './globals.css'
 import { QueryProvider } from '@/components/providers/query-provider'
-import { cn } from '@/lib/utils'
-import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/providers/theme-provider'
-import { TRPCReactProvider } from '@/trpc/client'
+import { Toaster } from '@/components/ui/sonner'
+import { cn } from '@/lib/utils'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
@@ -20,9 +19,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Notes App',
-  description:
-    'A notes app built with Next.js, Better Auth, MongoDB, and tRPC.',
+  title: 'Hello',
+  description: 'Hello world.',
 }
 
 export default function RootLayout({ children }: React.PropsWithChildren) {
@@ -39,7 +37,7 @@ export default function RootLayout({ children }: React.PropsWithChildren) {
       )}
       suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full flex-col" suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -47,9 +45,7 @@ export default function RootLayout({ children }: React.PropsWithChildren) {
           disableTransitionOnChange
         >
           <Toaster />
-          <QueryProvider>
-            <TRPCReactProvider>{children}</TRPCReactProvider>
-          </QueryProvider>
+          <QueryProvider>{children}</QueryProvider>
         </ThemeProvider>
       </body>
     </html>
