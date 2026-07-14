@@ -1,4 +1,6 @@
-import { getGeminiApiKey, getGeminiBaseUrl, getGeminiModel } from '@/lib/env'
+import OpenAI from 'openai'
+
+import { getLlmApiKey, getLlmBaseUrl, getLlmModel } from '@/lib/env'
 import {
   noteTitlePrompt,
   notebookHtmlPrompt,
@@ -6,39 +8,26 @@ import {
 } from '@/lib/llm/prompts'
 import { ensureA4NotebookHtml } from '@/lib/notebook-html'
 
-type GeminiError = {
-  error?: {
-    code?: number
-    message?: string
-    status?: string
-  }
-}
-
-type ChatCompletionResponse = GeminiError & {
-  choices?: Array<{ message?: { content?: string | null } }>
-}
-
 type CompleteOptions = {
   temperature?: number
   maxTokens?: number
 }
 
-function getGeminiAuthHeaders(apiKey: string): HeadersInit {
-  // Gemini's OpenAI-compatible endpoint expects Authorization: Bearer.
-  // x-goog-api-key alone returns 400 "Missing or invalid Authorization header".
-  return { Authorization: `Bearer ${apiKey}` }
-}
+function createLlmClient() {
+  const apiKey = getLlmApiKey()
 
-function parseGeminiError(body: unknown, status: number) {
-  const payload = Array.isArray(body) ? body[0] : body
-  const geminiError = payload as GeminiError
-  const message = geminiError.error?.message
-
-  if (message) {
-    return message
+  if (!apiKey) {
+    throw new Error(
+      'Set OPENAI_API_KEY or AI_GATEWAY_API_KEY for note generation',
+    )
   }
 
-  return `Gemini request failed (${status})`
+  const baseURL = getLlmBaseUrl()
+
+  return new OpenAI({
+    apiKey,
+    ...(baseURL ? { baseURL } : {}),
+  })
 }
 
 function extractAssistantText(content: string | null | undefined) {
@@ -55,42 +44,24 @@ function stripCodeFences(value: string) {
 }
 
 async function complete(prompt: string, options: CompleteOptions = {}) {
-  const apiKey = getGeminiApiKey()
+  const model = getLlmModel()
 
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not configured')
+  if (!model) {
+    throw new Error('Set OPENAI_MODEL or AI_GATEWAY_MODEL for note generation')
   }
 
-  const baseUrl = getGeminiBaseUrl().replace(/\/$/, '')
-  const model = getGeminiModel()
+  const client = createLlmClient()
   const temperature = options.temperature ?? 0.35
   const maxTokens = options.maxTokens ?? 16_384
 
-  const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getGeminiAuthHeaders(apiKey),
-    },
-    body: JSON.stringify({
-      model,
-      temperature,
-      max_tokens: maxTokens,
-      messages: [{ role: 'user', content: prompt }],
-    }),
+  const completion = await client.chat.completions.create({
+    model,
+    temperature,
+    max_tokens: maxTokens,
+    messages: [{ role: 'user', content: prompt }],
   })
 
-  const body = (await response.json()) as unknown
-
-  if (!response.ok) {
-    throw new Error(parseGeminiError(body, response.status))
-  }
-
-  const payload = (
-    Array.isArray(body) ? body[0] : body
-  ) as ChatCompletionResponse
-
-  return extractAssistantText(payload.choices?.[0]?.message?.content)
+  return extractAssistantText(completion.choices[0]?.message?.content)
 }
 
 export async function structureTranscript(rawTranscript: string) {
