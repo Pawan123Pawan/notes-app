@@ -1,9 +1,15 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Trash2 } from 'lucide-react'
+import {
+  CopyIcon,
+  FolderOpenIcon,
+  MoreHorizontalIcon,
+  Trash2Icon,
+} from 'lucide-react'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
@@ -26,13 +32,29 @@ import { Badge } from '@/components/ui/badge'
 import { BaseButton, Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import type { NoteStatus } from '@/db/schema/note.constants'
+import {
+  noteSourceTypeLabels,
+  type NoteStatus,
+} from '@/db/schema/note.constants'
 import { triggerRouteProgressStart } from '@/lib/route-progress'
 import { showErrorToast } from '@/lib/utils'
 import { updateSubjectInput } from '@/trpc/routers/subjects/subjects.input'
@@ -49,8 +71,228 @@ const statusLabels: Record<NoteStatus, string> = {
   failed: 'Failed',
 }
 
+const statusVariants: Record<
+  NoteStatus,
+  'default' | 'secondary' | 'destructive' | 'outline'
+> = {
+  pending: 'secondary',
+  processing: 'default',
+  completed: 'outline',
+  failed: 'destructive',
+}
+
 type RenameSubjectFormValues = {
   name: string
+}
+
+type SubjectNote = {
+  id: string
+  title: string
+  status: NoteStatus
+  sourceType: keyof typeof noteSourceTypeLabels
+  subjectId?: string
+}
+
+type SubjectOption = {
+  id: string
+  name: string
+}
+
+function NoteCard({
+  note,
+  subjects,
+  currentSubjectId,
+}: {
+  note: SubjectNote
+  subjects: SubjectOption[]
+  currentSubjectId: string
+}) {
+  const trpc = useTRPC()
+  const queryClient = useQueryClient()
+  const [deleteOpen, setDeleteOpen] = useState(false)
+
+  const noteHref = `/app/notes/${note.id}`
+
+  const invalidateNoteQueries = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: trpc.notes.list.queryKey(),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: trpc.subjects.list.queryKey(),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: trpc.subjects.getById.queryKey({
+          subjectId: currentSubjectId,
+        }),
+      }),
+    ])
+  }
+
+  const updateSubjectMutation = useMutation(
+    trpc.notes.updateSubject.mutationOptions({
+      onSuccess: async () => {
+        await invalidateNoteQueries()
+        toast.success('Subject updated')
+      },
+      onError: (error) => {
+        showErrorToast(
+          'Could not move note',
+          error,
+          'Unable to update the subject.',
+        )
+      },
+    }),
+  )
+
+  const deleteMutation = useMutation(
+    trpc.notes.delete.mutationOptions({
+      onSuccess: async () => {
+        await invalidateNoteQueries()
+        toast.success('Note deleted')
+      },
+      onError: (error) => {
+        showErrorToast(
+          'Could not delete note',
+          error,
+          'Unable to delete this note.',
+        )
+      },
+    }),
+  )
+
+  const copyNotebookHtml = async () => {
+    try {
+      const detail = await queryClient.fetchQuery(
+        trpc.notes.getById.queryOptions({ noteId: note.id }),
+      )
+      if (!detail.notebookHtml) {
+        toast.error('This note has no notebook HTML yet')
+        return
+      }
+      await navigator.clipboard.writeText(detail.notebookHtml)
+      toast.success('Notebook HTML copied')
+    } catch {
+      toast.error('Could not copy HTML')
+    }
+  }
+
+  return (
+    <>
+      <Card className="hover:bg-muted/40 h-full transition-colors">
+        <CardHeader className="gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <Link
+              href={noteHref}
+              className="min-w-0 flex-1"
+              onClick={() => triggerRouteProgressStart(noteHref)}
+            >
+              <CardTitle className="line-clamp-2 text-base hover:underline">
+                {note.title}
+              </CardTitle>
+            </Link>
+            <div className="flex shrink-0 items-center gap-2">
+              <Badge variant={statusVariants[note.status]}>
+                {statusLabels[note.status]}
+              </Badge>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon-sm"
+                    aria-label="Note actions"
+                  >
+                    <MoreHorizontalIcon />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-48">
+                  <DropdownMenuGroup>
+                    {note.status === 'completed' ? (
+                      <DropdownMenuItem onClick={copyNotebookHtml}>
+                        <CopyIcon />
+                        Copy HTML
+                      </DropdownMenuItem>
+                    ) : null}
+
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <FolderOpenIcon />
+                        Move to subject
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="min-w-44">
+                        <DropdownMenuRadioGroup
+                          value={note.subjectId ?? 'none'}
+                          onValueChange={(value) => {
+                            updateSubjectMutation.mutate({
+                              noteId: note.id,
+                              subjectId: value === 'none' ? null : value,
+                            })
+                          }}
+                        >
+                          <DropdownMenuRadioItem
+                            value="none"
+                            disabled={updateSubjectMutation.isPending}
+                          >
+                            No subject
+                          </DropdownMenuRadioItem>
+                          {subjects.map((subject) => (
+                            <DropdownMenuRadioItem
+                              key={subject.id}
+                              value={subject.id}
+                              disabled={updateSubjectMutation.isPending}
+                            >
+                              {subject.name}
+                            </DropdownMenuRadioItem>
+                          ))}
+                        </DropdownMenuRadioGroup>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                  </DropdownMenuGroup>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => setDeleteOpen(true)}
+                  >
+                    <Trash2Icon />
+                    Delete note
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            {noteSourceTypeLabels[note.sourceType]}
+          </p>
+        </CardHeader>
+      </Card>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this note?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the note and notebook. This action cannot
+              be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate({ noteId: note.id })}
+            >
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete note'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
 }
 
 export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
@@ -61,6 +303,8 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
   const subjectQuery = useQuery(
     trpc.subjects.getById.queryOptions({ subjectId }),
   )
+
+  const subjectsQuery = useQuery(trpc.subjects.list.queryOptions())
 
   const notesQuery = useQuery(
     trpc.notes.list.queryOptions({
@@ -157,6 +401,7 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
 
   const subject = subjectQuery.data
   const notes = notesQuery.data?.items ?? []
+  const subjects = subjectsQuery.data ?? []
 
   return (
     <div className="space-y-8">
@@ -193,7 +438,7 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button type="button" variant="outline">
-                <Trash2 />
+                <Trash2Icon />
                 Delete subject
               </Button>
             </AlertDialogTrigger>
@@ -251,29 +496,12 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {notes.map((note) => (
-              <Link
+              <NoteCard
                 key={note.id}
-                href={`/app/notes/${note.id}`}
-                onClick={() =>
-                  triggerRouteProgressStart(`/app/notes/${note.id}`)
-                }
-              >
-                <Card className="hover:bg-muted/40 h-full transition-colors">
-                  <CardHeader className="gap-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <CardTitle className="line-clamp-2 text-base">
-                        {note.title}
-                      </CardTitle>
-                      <Badge variant="secondary">
-                        {statusLabels[note.status]}
-                      </Badge>
-                    </div>
-                    <p className="text-muted-foreground text-sm capitalize">
-                      {note.sourceType === 'youtube' ? 'YouTube' : 'Transcript'}
-                    </p>
-                  </CardHeader>
-                </Card>
-              </Link>
+                note={note}
+                subjects={subjects}
+                currentSubjectId={subjectId}
+              />
             ))}
           </div>
         )}

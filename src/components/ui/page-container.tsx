@@ -6,7 +6,10 @@ type PageContainerProps = ComponentProps<'div'>
 export function PageContainer({ className, ...props }: PageContainerProps) {
   return (
     <div
-      className={cn('flex flex-col gap-4 p-4 sm:gap-8 sm:p-6', className)}
+      className={cn(
+        'flex flex-col gap-4 px-4 py-2 sm:gap-8 sm:px-6',
+        className,
+      )}
       {...props}
     />
   )

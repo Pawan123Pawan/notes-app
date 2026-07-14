@@ -184,6 +184,24 @@ export async function createNote(
     }
   }
 
+  if (input.sourceType === 'html') {
+    const note = await Note.create({
+      userId,
+      subjectId: parseSubjectId(input.subjectId),
+      sourceType: 'html',
+      title: input.title?.trim() || 'Imported notebook',
+      rawTranscript: '(Imported HTML notebook)',
+      structuredNotes: '',
+      notebookHtml: input.notebookHtml,
+      status: 'completed',
+    })
+
+    return {
+      id: note._id.toString(),
+      status: note.status,
+    }
+  }
+
   const note = await Note.create({
     userId,
     subjectId: parseSubjectId(input.subjectId),

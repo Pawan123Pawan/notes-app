@@ -8,7 +8,7 @@ import { NoteDetailView } from './note-detail-view'
 
 export const metadata: Metadata = {
   title: 'Note',
-  description: 'View structured study notes and your handwritten notebook.',
+  description: 'View your handwritten A4 study notebook.',
 }
 
 type NotePageProps = {
@@ -19,7 +19,7 @@ export default async function NotePage({ params }: NotePageProps) {
   const { noteId } = await params
 
   return (
-    <PageContainer>
+    <PageContainer className="flex h-dvh max-h-dvh flex-1 flex-col gap-0 overflow-hidden p-0 sm:gap-0 sm:px-0 md:h-[calc(100dvh-1rem)] md:max-h-[calc(100dvh-1rem)]">
       <Suspense fallback={<NoteDetailSkeleton />}>
         <NoteDetailView noteId={noteId} />
       </Suspense>

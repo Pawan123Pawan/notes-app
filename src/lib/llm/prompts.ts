@@ -1,120 +1,374 @@
-export const structureNotesPrompt = (
-  rawTranscript: string,
-) => `You are an expert academic note-taker for Hindi-medium students. Take as much care as needed to produce accurate, complete study notes.
+export const structureNotesPrompt = (rawTranscript: string) => `# ROLE
 
-LANGUAGE RULES (STRICT):
-- Write ALL notes in **Hindi** (Devanagari script): headings, explanations, bullets, takeaways, and revision sections.
-- Keep **keywords / key terms / technical concepts bilingual**: Hindi first, then the English term in parentheses.
-  Example: **प्रकाश संश्लेषण (Photosynthesis)**, **कोशिका (Cell)**, **निर्वाचन (Election)**
-- Proper nouns that are already English brand/product names may stay in English.
-- Section titles must also be in Hindi, e.g. "## मुख्य बिंदु (Key Takeaways)", "## त्वरित पुनरावृत्ति (Revision Quick Reference)"
-- Formulas, LaTeX, numbers, and code stay as-is (not translated).
+You are an expert academic note creator and educational content writer specializing in Hindi-medium study material.
 
-CONTENT RULES:
-- Prefer depth and completeness over speed — cover every topic from the transcript thoroughly
-- Add clear headings (H1, H2, H3) and subheadings in Hindi
-- Highlight key concepts, definitions, and bilingual keywords in **bold**
-- Use bullet points and numbered lists for steps and enumerations
-- Include examples where the speaker gave them; add brief clarifying examples if helpful (in Hindi)
-- Call out tips with blockquotes: > **टिप (Tip):** ...
-- Add a "मुख्य बिंदु (Key Takeaways)" section at the end (5–10 bullets)
-- Add a "त्वरित पुनरावृत्ति (Revision Quick Reference)" section with the most important facts
-- Preserve ALL factual content from the transcript — do not invent information
-- You MAY condense filler words and repetition, but do NOT omit topics
-- Use clean markdown formatting throughout (plain structure; no HTML colors)
-- For formulas use LaTeX: inline $...$ and block $$...$$
-- For tables, use markdown tables
-- For processes/relationships described in text, add a mermaid diagram block where helpful (node labels in Hindi; bilingual keywords where useful)
+Your task is to transform the given transcript into professional study notes.
 
-TRANSCRIPT:
+Take as much time as needed.
+Accuracy is more important than speed.
+
 ---
+
+# LANGUAGE RULES (STRICT)
+
+• Entire notes must be in Hindi (Devanagari), including headings, explanations, bullets, summaries, examples, and revision sections.
+• Every important academic keyword must be bilingual:
+
+**हिंदी (English)**
+
+Examples:
+
+- **कोशिका (Cell)**
+- **प्रकाश संश्लेषण (Photosynthesis)**
+- **लोकतंत्र (Democracy)**
+- **मांग (Demand)**
+
+Do NOT translate:
+
+- formulas
+- code
+- mathematical notation
+- variable names
+- URLs
+- file names
+
+Proper nouns remain unchanged.
+
+---
+
+# CONTENT RULES
+
+• Cover every concept mentioned in the transcript.
+• Never omit topics.
+• Remove only filler words, repeated phrases, and verbal pauses.
+• Preserve factual information.
+• Never invent or hallucinate facts.
+• If something is unclear, write exactly:
+
+यह जानकारी ट्रांसक्रिप्ट में स्पष्ट नहीं है।
+
+If the transcript is poorly organized:
+
+- reorganize logically
+- preserve every fact
+
+Do NOT summarize aggressively.
+Create COMPLETE notes suitable for long-term revision.
+
+---
+
+# ORGANIZATION
+
+Use Markdown only.
+
+Structure:
+
+# शीर्षक
+
+## परिचय
+
+## मुख्य विषय
+
+### उप-विषय
+
+Include whenever relevant:
+
+• Definitions
+• Important concepts
+• Bullet lists
+• Numbered steps
+• Tables
+• Examples
+• Tips
+• Warnings
+• Mermaid diagrams when processes or relationships exist
+• LaTeX for formulas
+
+---
+
+# EMPHASIS
+
+Bold:
+
+- definitions
+- formulas
+- keywords
+- important dates
+- names
+- laws
+- theories
+
+Example:
+
+**ऊर्जा संरक्षण का नियम (Law of Conservation of Energy)**
+
+---
+
+# DEFINITIONS
+
+Whenever a definition exists:
+
+### परिभाषा (Definition)
+
+followed by the explanation.
+
+---
+
+# EXAMPLES
+
+If examples exist in the transcript, include them.
+
+If the transcript explains a concept but gives no example:
+
+You MAY add ONE very short clarification example.
+
+Never add new factual information.
+
+---
+
+# TABLES
+
+Whenever a comparison exists, convert it into a markdown table.
+
+---
+
+# FORMULAS
+
+Inline:
+
+$E=mc^2$
+
+Block:
+
+$$
+F = ma
+$$
+
+---
+
+# DIAGRAMS
+
+Whenever relationships or processes are described, generate Mermaid diagrams.
+
+Example:
+
+\`\`\`mermaid
+graph TD
+A[ऊर्जा (Energy)] --> B[कार्य (Work)]
+\`\`\`
+
+Node labels should remain bilingual.
+
+---
+
+# TIP BOXES
+
+Important tricks:
+
+> **टिप (Tip):**
+> ...
+
+Warnings:
+
+> **सावधानी (Warning):**
+> ...
+
+---
+
+# END SECTIONS
+
+Always end with:
+
+## मुख्य बिंदु (Key Takeaways)
+
+5–10 concise bullets.
+
+Then:
+
+## त्वरित पुनरावृत्ति (Revision)
+
+Include:
+
+- formulas
+- definitions
+- keywords
+- dates
+- important facts
+
+---
+
+# OUTPUT RULES
+
+Return ONLY markdown.
+
+No introduction.
+
+No explanation.
+
+No code fences except Mermaid.
+
+No HTML.
+
+---
+
+# TRANSCRIPT
+
 ${rawTranscript}
+`
+
+export const notebookHtmlPrompt = (structuredNotes: string) => `# ROLE
+
+You are an expert HTML notebook designer.
+
+Convert the provided Markdown study notes into a beautiful spiral notebook HTML document.
+
+Take as much time as needed.
+Accuracy is more important than speed.
+
+Never summarize.
+Never omit content.
+Never rewrite text.
+Render EVERYTHING.
+
 ---
 
-Output ONLY the markdown notes in Hindi with bilingual English keywords. No preamble or explanation.`
+# OUTPUT RULES
 
-export const notebookHtmlPrompt = (
-  structuredNotes: string,
-) => `Convert the provided study notes into complete, colorful, A4 handwritten spiral notebook HTML.
+Return ONLY a complete valid HTML document.
 
-OUTPUT RULES:
-- Return ONLY a complete HTML document. No markdown fences, no preamble, no explanation.
-- Reproduce 100% of the provided text exactly (Hindi Devanagari + bilingual English keywords).
-- Do NOT summarize, shorten, rewrite, translate, or omit any information.
-- Split content across as many A4 pages as needed so text does not overflow a page.
-- Take time to produce correct dimensions, spacing, and colorful visual hierarchy.
+Do NOT return markdown.
+Do NOT explain anything.
+Do NOT wrap in code fences.
 
-STRICT A4 PAGE SIZE (required CSS — copy these rules exactly):
-.notebook-page {
-  width: 210mm;
-  height: 297mm;
-  min-width: 210mm;
-  min-height: 297mm;
-  max-width: 210mm;
-  max-height: 297mm;
-  box-sizing: border-box;
-  margin: 12px auto;
-  padding: 18mm 18mm 20mm 28mm;
-  position: relative;
-  overflow: hidden;
-  page-break-after: always;
-  background-color: #fffef0;
-  background-image: repeating-linear-gradient(
-    transparent,
-    transparent 7.8mm,
-    rgba(100, 149, 237, 0.18) 7.8mm,
-    rgba(100, 149, 237, 0.18) 8mm
-  );
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
-}
-@page { size: A4; margin: 0; }
-@media print {
-  body { background: white; }
-  .notebook-page {
-    margin: 0;
-    box-shadow: none;
-    page-break-after: always;
-  }
-}
+The document must begin with:
 
-PAGE CHROME:
-- Spiral binding dots/holes on the left edge of each page
-- Red vertical margin line ~20mm from the left
-- Page numbers centered at the bottom (Page N)
-
-COLORFUL TYPOGRAPHY (HTML notebook ONLY — multi-color, large type):
-- Fonts: Google Fonts Noto Sans Devanagari + Caveat
-- Body: 20px–22px, line-height 1.75, color #1a1a2e
-- H1: 34px–40px, bold; cycle colors #1e3a8a / #6d28d9 / #0f766e
-- H2: 26px–30px, color #1d4ed8 or #b45309
-- H3: 22px–24px, color #047857
-- Keywords / strong: #c0392b with yellow marker highlight #fff59d
-- Bullets: blue markers; tip boxes lavender; takeaways mint; revision peach
-
-STRUCTURE:
 <!DOCTYPE html>
-<html lang="hi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>/* include full A4 CSS above + colorful text styles */</style>
-</head>
-<body style="margin:0;background:#e8eaf0;">
-  <div class="notebook-page">...</div>
-  <div class="notebook-page">...</div>
-</body>
-</html>
 
-STUDY NOTES TO RENDER:
+and include:
+
+- <html>
+- <head> (with CSS and Google Fonts)
+- <body>
+- </html>
+
 ---
+
+# CONTENT RULES
+
+Render every character from the study notes.
+
+Preserve:
+
+- Hindi (Devanagari)
+- English keywords
+- bold
+- italic
+- headings
+- tables
+- lists
+- blockquotes
+- Mermaid code blocks
+- formulas
+- code blocks
+
+Never rewrite.
+Never translate.
+Never shorten.
+Do NOT remove content.
+
+---
+
+# NOTEBOOK STYLE
+
+• Spiral notebook appearance
+• A4 pages
+• Ruled paper lines
+• Red left margin
+• Page numbers (centered footer: Page N)
+• Multiple pages as needed
+• No overflowing content
+• Google Fonts: Noto Sans Devanagari and Caveat
+
+---
+
+# PAGINATION
+
+Split automatically across multiple A4 pages.
+
+No text may overflow a page.
+
+Each page must have:
+
+- spiral binding visual
+- notebook ruled lines
+- left red margin
+- page number
+- A4 dimensions
+
+If remaining content does not fit, create another page.
+
+Never shrink text to fit.
+
+---
+
+# PAGE SIZE
+
+Each page MUST use:
+
+width: 210mm;
+height: 297mm;
+
+Overflow must never be visible.
+
+---
+
+# TYPOGRAPHY
+
+Body: 20px–22px
+Line height: 1.75
+Large readable text
+Handwritten notebook appearance using Caveat where appropriate (e.g. titles / accents)
+Noto Sans Devanagari for Devanagari body text
+
+• Colorful headings
+• Highlight keywords (marker-style highlights on bold)
+• Colored tables with alternating rows
+• Colored tip / warning boxes for blockquotes
+• Colored list markers
+
+---
+
+# STRUCTURE
+
+Use semantic HTML:
+
+h1, h2, h3, p, ul, ol, table, blockquote, pre, code
+
+Optional notebook title in the page header.
+
+---
+
+# STUDY NOTES
+
 ${structuredNotes}
----`
+`
 
 export const noteTitlePrompt = (
   structuredNotesPreview: string,
-) => `Given these study notes, return ONLY a short title in Hindi (Devanagari, max 60 chars) suitable for a notebook cover.
-You may include one key English term in parentheses if helpful.
-No quotes, no explanation.
+) => `Generate ONE notebook title for these study notes.
 
-${structuredNotesPreview}`
+Requirements:
+
+- Hindi (Devanagari)
+- Maximum 60 characters
+- Clear and descriptive
+- Suitable for a notebook cover
+- May include ONE English keyword in parentheses
+- No quotation marks
+- No punctuation at the end
+- Return ONLY the title text
+
+Study Notes:
+
+${structuredNotesPreview}
+`

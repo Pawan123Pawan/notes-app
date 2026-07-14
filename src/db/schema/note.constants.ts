@@ -1,5 +1,11 @@
-export const noteSourceTypes = ['youtube', 'transcript'] as const
+export const noteSourceTypes = ['youtube', 'transcript', 'html'] as const
 export type NoteSourceType = (typeof noteSourceTypes)[number]
+
+export const noteSourceTypeLabels: Record<NoteSourceType, string> = {
+  youtube: 'YouTube',
+  transcript: 'Transcript',
+  html: 'HTML',
+}
 
 export const noteStatuses = [
   'pending',

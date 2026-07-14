@@ -1,18 +1,16 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { Suspense } from 'react'
 
-import { NotesGridSkeleton } from '@/components/app-skeletons'
-import { BaseButton } from '@/components/ui/button'
+import { SubjectsGridSkeleton } from '@/components/app-skeletons'
 import { PageContainer } from '@/components/ui/page-container'
 import { PageHeader } from '@/components/ui/page-header'
 import { getCurrentSession } from '@/lib/auth-server'
 
-import { RecentNotes } from './recent-notes'
+import { DashboardView } from './dashboard-view'
 
 export const metadata: Metadata = {
   title: 'Dashboard',
-  description: 'Your notes workspace.',
+  description: 'Browse your notes by subject.',
 }
 
 export default async function AppDashboardPage() {
@@ -23,14 +21,9 @@ export default async function AppDashboardPage() {
       <PageHeader
         title="Dashboard"
         description={`Welcome back, ${session?.user.name ?? 'there'}.`}
-        extraAction={
-          <BaseButton asChild>
-            <Link href="/app/new">New note</Link>
-          </BaseButton>
-        }
       />
-      <Suspense fallback={<NotesGridSkeleton />}>
-        <RecentNotes />
+      <Suspense fallback={<SubjectsGridSkeleton />}>
+        <DashboardView />
       </Suspense>
     </PageContainer>
   )

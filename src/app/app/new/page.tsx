@@ -10,7 +10,7 @@ import { NewNoteForm } from './new-note-form'
 export const metadata: Metadata = {
   title: 'New note',
   description:
-    'Paste a transcript or add a YouTube URL to generate structured study notes and a handwritten notebook.',
+    'Upload a transcript, add a YouTube URL, or import an HTML notebook file to save study notes.',
 }
 
 export default function NewNotePage() {
@@ -18,7 +18,7 @@ export default function NewNotePage() {
     <PageContainer>
       <PageHeader
         title="New note"
-        description="Upload a transcript file or paste a YouTube URL to generate structured study notes."
+        description="Upload a transcript, paste a YouTube URL, or import an HTML notebook file."
       />
       <Suspense fallback={<NewNoteFormSkeleton />}>
         <NewNoteForm />
