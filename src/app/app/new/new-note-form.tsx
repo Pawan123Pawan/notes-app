@@ -71,6 +71,25 @@ type CreateSubjectFormValues = {
   name: string
 }
 
+const tabMeanings: Record<NewNoteTab, { title: string; description: string }> =
+  {
+    transcript: {
+      title: 'Create notes from a transcript',
+      description:
+        'Use lecture or class text. Upload a file or paste the transcript, and we turn it into structured study notes and a notebook for that topic.',
+    },
+    youtube: {
+      title: 'Create notes from a YouTube video',
+      description:
+        'Paste a video link. We read available captions, then build structured study notes and a notebook about the topic covered in the video.',
+    },
+    html: {
+      title: 'Save an existing HTML notebook',
+      description:
+        'Already have finished notes as HTML? Upload a file or paste the HTML to save it as a notebook. Nothing is generated—your content is stored as-is.',
+    },
+  }
+
 function parseNewNoteTab(value: string | null): NewNoteTab {
   if (value === 'youtube' || value === 'html') {
     return value
@@ -305,8 +324,9 @@ export function NewNoteForm() {
         <CardHeader>
           <CardTitle>Create study notes</CardTitle>
           <CardDescription>
-            Upload a transcript, paste a YouTube URL, or import an HTML notebook
-            file into your account.
+            Pick how you want to add a note: from a transcript, a YouTube video,
+            or an existing HTML notebook. Each option creates a note about that
+            topic you can review later.
           </CardDescription>
         </CardHeader>
         <form noValidate onSubmit={submitNote}>
@@ -360,20 +380,27 @@ export function NewNoteForm() {
               <TabsList>
                 <TabsTrigger asChild value="transcript">
                   <Link href={tabHref('transcript', subjectIdForLinks)}>
-                    Transcript file
+                    Transcript
                   </Link>
                 </TabsTrigger>
                 <TabsTrigger asChild value="youtube">
                   <Link href={tabHref('youtube', subjectIdForLinks)}>
-                    YouTube URL
+                    YouTube
                   </Link>
                 </TabsTrigger>
                 <TabsTrigger asChild value="html">
-                  <Link href={tabHref('html', subjectIdForLinks)}>
-                    HTML file
-                  </Link>
+                  <Link href={tabHref('html', subjectIdForLinks)}>HTML</Link>
                 </TabsTrigger>
               </TabsList>
+
+              <div className="bg-muted/40 mt-4 rounded-lg border p-4">
+                <p className="text-sm font-medium">
+                  {tabMeanings[activeTab].title}
+                </p>
+                <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
+                  {tabMeanings[activeTab].description}
+                </p>
+              </div>
 
               <TabsContent value="transcript" className="mt-4 space-y-4">
                 <FieldGroup>
@@ -450,8 +477,8 @@ export function NewNoteForm() {
                           aria-invalid={fieldState.invalid}
                         />
                         <FieldDescription>
-                          We fetch available captions from the video, then
-                          generate structured notes and a handwritten notebook.
+                          Paste the full video link. Captions must be available
+                          for note generation to work.
                         </FieldDescription>
                         {fieldState.invalid ? (
                           <FieldError errors={[fieldState.error]} />
@@ -491,8 +518,7 @@ export function NewNoteForm() {
                       </p>
                     </div>
                     <FieldDescription>
-                      Upload an HTML file or paste the notebook HTML below. No
-                      generation step runs for this source.
+                      Upload an HTML file or paste the notebook HTML below.
                     </FieldDescription>
                   </Field>
 
@@ -529,7 +555,7 @@ export function NewNoteForm() {
                         <Input
                           {...field}
                           id="new-note-html-title"
-                          placeholder="Optional title for the imported notebook"
+                          placeholder="Optional title so you can recognize this topic later"
                           aria-invalid={fieldState.invalid}
                         />
                         {fieldState.invalid ? (

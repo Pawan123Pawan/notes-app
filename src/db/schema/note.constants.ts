@@ -2,9 +2,9 @@ export const noteSourceTypes = ['youtube', 'transcript', 'html'] as const
 export type NoteSourceType = (typeof noteSourceTypes)[number]
 
 export const noteSourceTypeLabels: Record<NoteSourceType, string> = {
-  youtube: 'YouTube',
-  transcript: 'Transcript',
-  html: 'HTML',
+  youtube: 'From YouTube video',
+  transcript: 'From transcript',
+  html: 'From HTML notebook',
 }
 
 export const noteStatuses = [
