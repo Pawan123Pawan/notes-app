@@ -8,7 +8,6 @@ import { LayoutDashboard, NotebookPen, Plus } from 'lucide-react'
 import { AppShellUserMenu } from '@/components/app-shell-user-menu'
 import { RouteTransitionProgress } from '@/components/route-transition-progress'
 import { useRouteTransitionProgress } from '@/hooks/use-route-transition-progress'
-import { Separator } from '@/components/ui/separator'
 import {
   Sidebar,
   SidebarContent,
@@ -102,6 +101,9 @@ function AppShellChrome({ children }: AppShellProps) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
+            <div className="absolute top-4 -right-4 z-50">
+              <SidebarTrigger className="size-8 cursor-pointer" />
+            </div>
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
@@ -132,13 +134,13 @@ function AppShellChrome({ children }: AppShellProps) {
           <SidebarRail />
         </Sidebar>
         <SidebarInset>
-          <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+          {/* <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
             <SidebarTrigger />
             <Separator
               orientation="vertical"
               className="mr-2 data-vertical:h-4 data-vertical:self-auto"
             />
-          </header>
+          </header> */}
           <div className="flex flex-1 flex-col">{children}</div>
         </SidebarInset>
       </SidebarProvider>

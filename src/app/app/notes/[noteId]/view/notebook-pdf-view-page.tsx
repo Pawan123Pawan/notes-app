@@ -19,6 +19,12 @@ export function NotebookPdfViewPage({ noteId }: NotebookPdfViewPageProps) {
   const noteQuery = useQuery(trpc.notes.getById.queryOptions({ noteId }))
 
   const note = noteQuery.data
+  const subjectId = note?.subjectId
+
+  const subjectQuery = useQuery({
+    ...trpc.subjects.getById.queryOptions({ subjectId: subjectId! }),
+    enabled: Boolean(subjectId),
+  })
 
   if (noteQuery.isLoading) {
     return (
@@ -60,8 +66,11 @@ export function NotebookPdfViewPage({ noteId }: NotebookPdfViewPageProps) {
 
   return (
     <NotebookPdfViewer
+      noteId={noteId}
       title={note.title}
       html={note.notebookHtml}
+      subjectId={note.subjectId}
+      subjectName={subjectQuery.data?.name}
       variant="standalone"
     />
   )

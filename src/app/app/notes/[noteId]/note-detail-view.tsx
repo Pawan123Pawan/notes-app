@@ -32,6 +32,12 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
   })
 
   const note = noteQuery.data
+  const subjectId = note?.subjectId
+
+  const subjectQuery = useQuery({
+    ...trpc.subjects.getById.queryOptions({ subjectId: subjectId! }),
+    enabled: Boolean(subjectId),
+  })
 
   if (noteQuery.isLoading) {
     return <NoteDetailSkeleton />
@@ -87,6 +93,8 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
           noteId={noteId}
           title={note.title}
           html={note.notebookHtml}
+          subjectId={note.subjectId}
+          subjectName={subjectQuery.data?.name}
         />
       ) : null}
 
