@@ -2,7 +2,13 @@
 
 import Link from 'next/link'
 import { useCallback, useRef, useState } from 'react'
-import { ExternalLink, Maximize, Minus, Plus, Printer } from 'lucide-react'
+import {
+  ExternalLinkIcon,
+  MaximizeIcon,
+  MinusIcon,
+  PlusIcon,
+  PrinterIcon,
+} from 'lucide-react'
 
 import {
   Breadcrumb,
@@ -143,7 +149,7 @@ export function NotebookPdfViewer({
           disabled={zoom <= minZoom}
           onClick={() => setManualZoom(zoom - zoomStep)}
         >
-          <Minus />
+          <MinusIcon />
         </Button>
         <span className="text-muted-foreground w-14 text-center text-xs tabular-nums">
           {zoomLabel}
@@ -156,7 +162,7 @@ export function NotebookPdfViewer({
           disabled={zoom >= maxZoom}
           onClick={() => setManualZoom(zoom + zoomStep)}
         >
-          <Plus />
+          <PlusIcon />
         </Button>
         <Button
           type="button"
@@ -166,7 +172,7 @@ export function NotebookPdfViewer({
           aria-pressed={fitMode}
           onClick={() => setFitMode(true)}
         >
-          <Maximize />
+          <MaximizeIcon />
           Fit width
         </Button>
         {!isStandalone && noteId ? (
@@ -177,7 +183,7 @@ export function NotebookPdfViewer({
             aria-label="Open notebook in new tab"
             onClick={openInNewTab}
           >
-            <ExternalLink />
+            <ExternalLinkIcon />
             New tab
           </Button>
         ) : null}
@@ -188,7 +194,7 @@ export function NotebookPdfViewer({
           aria-label="Print notebook"
           onClick={() => iframeRef.current?.contentWindow?.print()}
         >
-          <Printer />
+          <PrinterIcon />
           Print
         </Button>
       </div>

@@ -4,11 +4,11 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  FolderOpen,
-  MoreHorizontal,
-  Plus,
-  Settings2,
-  Trash2,
+  FolderOpenIcon,
+  MoreHorizontalIcon,
+  PlusIcon,
+  Settings2Icon,
+  Trash2Icon,
 } from 'lucide-react'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -115,7 +115,7 @@ function SubjectCard({
                   size="icon-sm"
                   aria-label="Subject actions"
                 >
-                  <MoreHorizontal />
+                  <MoreHorizontalIcon />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-48">
@@ -125,7 +125,7 @@ function SubjectCard({
                       href={newNoteHref}
                       onClick={() => triggerRouteProgressStart(newNoteHref)}
                     >
-                      <Plus />
+                      <PlusIcon />
                       New note
                     </Link>
                   </DropdownMenuItem>
@@ -134,7 +134,7 @@ function SubjectCard({
                       href={notesHref}
                       onClick={() => triggerRouteProgressStart(notesHref)}
                     >
-                      <FolderOpen />
+                      <FolderOpenIcon />
                       View notes
                     </Link>
                   </DropdownMenuItem>
@@ -143,7 +143,7 @@ function SubjectCard({
                       href={manageHref}
                       onClick={() => triggerRouteProgressStart(manageHref)}
                     >
-                      <Settings2 />
+                      <Settings2Icon />
                       Manage subject
                     </Link>
                   </DropdownMenuItem>
@@ -155,7 +155,7 @@ function SubjectCard({
                   variant="destructive"
                   onClick={() => setDeleteOpen(true)}
                 >
-                  <Trash2 />
+                  <Trash2Icon />
                   Delete subject
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -271,7 +271,7 @@ export function SubjectsView() {
                 )}
               />
               <Button type="submit" loading={createMutation.isPending}>
-                <Plus />
+                <PlusIcon />
                 Add subject
               </Button>
             </FieldGroup>
@@ -284,7 +284,7 @@ export function SubjectsView() {
       ) : subjects.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-start gap-3 py-8">
-            <FolderOpen className="text-muted-foreground size-8" />
+            <FolderOpenIcon className="text-muted-foreground size-8" />
             <p className="text-muted-foreground text-sm">
               No subjects yet. Create one above to organize your notes.
             </p>

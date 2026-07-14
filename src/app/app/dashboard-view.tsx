@@ -5,13 +5,13 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  ArrowLeft,
-  Copy,
-  FolderOpen,
-  MoreHorizontal,
-  Plus,
-  Settings2,
-  Trash2,
+  ArrowLeftIcon,
+  CopyIcon,
+  FolderOpenIcon,
+  MoreHorizontalIcon,
+  PlusIcon,
+  Settings2Icon,
+  Trash2Icon,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -194,21 +194,21 @@ function NoteCard({
                     size="icon-sm"
                     aria-label="Note actions"
                   >
-                    <MoreHorizontal />
+                    <MoreHorizontalIcon />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-48">
                   <DropdownMenuGroup>
                     {note.status === 'completed' ? (
                       <DropdownMenuItem onClick={copyNotebookHtml}>
-                        <Copy />
+                        <CopyIcon />
                         Copy HTML
                       </DropdownMenuItem>
                     ) : null}
 
                     <DropdownMenuSub>
                       <DropdownMenuSubTrigger>
-                        <FolderOpen />
+                        <FolderOpenIcon />
                         Move to subject
                       </DropdownMenuSubTrigger>
                       <DropdownMenuSubContent className="min-w-44">
@@ -247,7 +247,7 @@ function NoteCard({
                     variant="destructive"
                     onClick={() => setDeleteOpen(true)}
                   >
-                    <Trash2 />
+                    <Trash2Icon />
                     Delete note
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -360,7 +360,7 @@ function SubjectCard({
                   size="icon-sm"
                   aria-label="Subject actions"
                 >
-                  <MoreHorizontal />
+                  <MoreHorizontalIcon />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-48">
@@ -370,7 +370,7 @@ function SubjectCard({
                       href={newNoteHref}
                       onClick={() => triggerRouteProgressStart(newNoteHref)}
                     >
-                      <Plus />
+                      <PlusIcon />
                       New note
                     </Link>
                   </DropdownMenuItem>
@@ -379,7 +379,7 @@ function SubjectCard({
                       href={manageHref}
                       onClick={() => triggerRouteProgressStart(manageHref)}
                     >
-                      <Settings2 />
+                      <Settings2Icon />
                       Manage subject
                     </Link>
                   </DropdownMenuItem>
@@ -391,7 +391,7 @@ function SubjectCard({
                   variant="destructive"
                   onClick={() => setDeleteOpen(true)}
                 >
-                  <Trash2 />
+                  <Trash2Icon />
                   Delete subject
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -449,7 +449,7 @@ function DashboardSubjects() {
     return (
       <Card>
         <CardContent className="flex flex-col items-start gap-4 py-8">
-          <FolderOpen className="text-muted-foreground size-8" />
+          <FolderOpenIcon className="text-muted-foreground size-8" />
           <p className="text-muted-foreground text-sm">
             No subjects or notes yet. Create a subject or add your first note.
           </p>
@@ -512,7 +512,7 @@ function DashboardSubjects() {
                       size="icon-sm"
                       aria-label="Unassigned notes actions"
                     >
-                      <MoreHorizontal />
+                      <MoreHorizontalIcon />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="min-w-48">
@@ -521,7 +521,7 @@ function DashboardSubjects() {
                         href="/app/new"
                         onClick={() => triggerRouteProgressStart('/app/new')}
                       >
-                        <Plus />
+                        <PlusIcon />
                         New note
                       </Link>
                     </DropdownMenuItem>
@@ -602,7 +602,7 @@ function DashboardSubjectNotes({ subjectId }: { subjectId: string }) {
         <div className="flex flex-col gap-2">
           <BaseButton asChild variant="ghost" size="sm" className="w-fit px-0">
             <Link href="/app" onClick={() => triggerRouteProgressStart('/app')}>
-              <ArrowLeft />
+              <ArrowLeftIcon />
               All subjects
             </Link>
           </BaseButton>

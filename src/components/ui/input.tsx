@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { EyeIcon, EyeOffIcon } from 'lucide-react'
 
 import { Toggle } from '@/components/ui/toggle'
 import { cn } from '@/lib/utils'
@@ -45,7 +45,7 @@ function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
         aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
         className="absolute top-1/2 right-1.5 h-6 w-6 -translate-y-1/2 p-0"
       >
-        {isPasswordVisible ? <EyeOff /> : <Eye />}
+        {isPasswordVisible ? <EyeOffIcon /> : <EyeIcon />}
       </Toggle>
     </div>
   )

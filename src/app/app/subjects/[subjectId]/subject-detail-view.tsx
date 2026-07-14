@@ -4,7 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Copy, FolderOpen, MoreHorizontal, Trash2 } from 'lucide-react'
+import {
+  CopyIcon,
+  FolderOpenIcon,
+  MoreHorizontalIcon,
+  Trash2Icon,
+} from 'lucide-react'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
@@ -199,21 +204,21 @@ function NoteCard({
                     size="icon-sm"
                     aria-label="Note actions"
                   >
-                    <MoreHorizontal />
+                    <MoreHorizontalIcon />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-48">
                   <DropdownMenuGroup>
                     {note.status === 'completed' ? (
                       <DropdownMenuItem onClick={copyNotebookHtml}>
-                        <Copy />
+                        <CopyIcon />
                         Copy HTML
                       </DropdownMenuItem>
                     ) : null}
 
                     <DropdownMenuSub>
                       <DropdownMenuSubTrigger>
-                        <FolderOpen />
+                        <FolderOpenIcon />
                         Move to subject
                       </DropdownMenuSubTrigger>
                       <DropdownMenuSubContent className="min-w-44">
@@ -252,7 +257,7 @@ function NoteCard({
                     variant="destructive"
                     onClick={() => setDeleteOpen(true)}
                   >
-                    <Trash2 />
+                    <Trash2Icon />
                     Delete note
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -433,7 +438,7 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button type="button" variant="outline">
-                <Trash2 />
+                <Trash2Icon />
                 Delete subject
               </Button>
             </AlertDialogTrigger>

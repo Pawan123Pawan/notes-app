@@ -1,4 +1,4 @@
-import mongoose, { Schema, type InferSchemaType, type Model } from 'mongoose'
+import mongoose, { Schema, type InferSchemaType } from 'mongoose'
 
 import { noteSourceTypes, noteStatuses } from '@/db/schema/note.constants'
 
@@ -60,8 +60,7 @@ const NOTE_MODEL_NAME = 'Note'
 // Next.js HMR keeps a previous compiled model on `mongoose.models`; drop it so
 // schema changes (e.g. new sourceType enum values) apply without a full restart.
 if (mongoose.models[NOTE_MODEL_NAME]) {
-  delete mongoose.models[NOTE_MODEL_NAME]
-  delete mongoose.connection.models[NOTE_MODEL_NAME]
+  mongoose.deleteModel(NOTE_MODEL_NAME)
 }
 
 export const Note = mongoose.model<NoteDocument>(NOTE_MODEL_NAME, noteSchema)

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { FileCode2Icon, FileText, Upload } from 'lucide-react'
+import { FileCode2Icon, FileTextIcon, UploadIcon } from 'lucide-react'
 import { useRef } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 
@@ -301,11 +301,11 @@ export function NewNoteForm() {
                       variant="outline"
                       onClick={() => transcriptFileInputRef.current?.click()}
                     >
-                      <Upload />
+                      <UploadIcon />
                       Choose file
                     </Button>
                     <p className="text-muted-foreground flex items-center gap-2 text-sm">
-                      <FileText className="size-4" />
+                      <FileTextIcon className="size-4" />
                       .txt, .md, .srt, or .vtt
                     </p>
                   </div>
@@ -392,7 +392,7 @@ export function NewNoteForm() {
                           variant="outline"
                           onClick={() => htmlFileInputRef.current?.click()}
                         >
-                          <Upload />
+                          <UploadIcon />
                           Choose HTML file
                         </Button>
                         <p className="text-muted-foreground flex items-center gap-2 text-sm">
