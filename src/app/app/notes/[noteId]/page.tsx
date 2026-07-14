@@ -19,7 +19,7 @@ export default async function NotePage({ params }: NotePageProps) {
   const { noteId } = await params
 
   return (
-    <PageContainer>
+    <PageContainer className="p-0">
       <Suspense fallback={<NoteDetailSkeleton />}>
         <NoteDetailView noteId={noteId} />
       </Suspense>

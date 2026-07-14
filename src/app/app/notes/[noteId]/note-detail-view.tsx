@@ -57,7 +57,7 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex h-screen flex-col gap-4">
       {isProcessingStatus(note.status) ? (
         <Card>
           <CardContent className="flex items-center gap-3 py-6">
