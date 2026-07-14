@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { FileCode2Icon, FileTextIcon, UploadIcon } from 'lucide-react'
-import { useRef } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { FileCode2Icon, FileTextIcon, PlusIcon, UploadIcon } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -16,6 +17,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Field,
   FieldDescription,
@@ -38,6 +47,7 @@ import { triggerRouteProgressStart } from '@/lib/route-progress'
 import { parseTranscriptFileContent } from '@/lib/transcript-file'
 import { showErrorToast } from '@/lib/utils'
 import { createNoteInput } from '@/trpc/routers/notes/notes.input'
+import { createSubjectInput } from '@/trpc/routers/subjects/subjects.input'
 import { useTRPC } from '@/trpc/react'
 
 type NewNoteTab = 'transcript' | 'youtube' | 'html'
@@ -52,6 +62,10 @@ type NewNoteFormValues = {
   htmlTitle: string
   htmlFileName: string
   subjectId: string
+}
+
+type CreateSubjectFormValues = {
+  name: string
 }
 
 function parseNewNoteTab(value: string | null): NewNoteTab {
@@ -81,8 +95,10 @@ export function NewNoteForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const trpc = useTRPC()
+  const queryClient = useQueryClient()
   const transcriptFileInputRef = useRef<HTMLInputElement>(null)
   const htmlFileInputRef = useRef<HTMLInputElement>(null)
+  const [createSubjectOpen, setCreateSubjectOpen] = useState(false)
   const activeTab = parseNewNoteTab(searchParams.get('tab'))
   const initialSubjectId = searchParams.get('subjectId') ?? 'none'
 
@@ -99,9 +115,18 @@ export function NewNoteForm() {
     },
   })
 
+  const createSubjectForm = useForm<CreateSubjectFormValues>({
+    defaultValues: { name: '' },
+  })
+
   const htmlFileName = useWatch({
     control: form.control,
     name: 'htmlFileName',
+  })
+
+  const selectedSubjectId = useWatch({
+    control: form.control,
+    name: 'subjectId',
   })
 
   const createMutation = useMutation(
@@ -116,6 +141,37 @@ export function NewNoteForm() {
           'Could not create note',
           error,
           'Unable to create your note.',
+        )
+      },
+    }),
+  )
+
+  const createSubjectMutation = useMutation(
+    trpc.subjects.create.mutationOptions({
+      onSuccess: async (subject) => {
+        queryClient.setQueryData(trpc.subjects.list.queryKey(), (previous) => {
+          const subjects = previous ?? []
+          if (subjects.some((item) => item.id === subject.id)) {
+            return subjects
+          }
+
+          return [...subjects, subject].sort((a, b) =>
+            a.name.localeCompare(b.name),
+          )
+        })
+        form.setValue('subjectId', subject.id)
+        createSubjectForm.reset()
+        setCreateSubjectOpen(false)
+        toast.success('Subject created')
+        await queryClient.invalidateQueries({
+          queryKey: trpc.subjects.list.queryKey(),
+        })
+      },
+      onError: (error) => {
+        showErrorToast(
+          'Could not create subject',
+          error,
+          'Unable to create this subject.',
         )
       },
     }),
@@ -217,235 +273,329 @@ export function NewNoteForm() {
     }
   }
 
+  const submitCreateSubject = createSubjectForm.handleSubmit((values) => {
+    const input = createSubjectInput.safeParse(values)
+
+    if (!input.success) {
+      for (const issue of input.error.issues) {
+        if (issue.path[0] === 'name') {
+          createSubjectForm.setError('name', { message: issue.message })
+        }
+      }
+
+      return
+    }
+
+    createSubjectMutation.mutate(input.data)
+  })
+
   const subjects = subjectsQuery.data ?? []
   const subjectIdForLinks =
-    searchParams.get('subjectId') ??
-    (initialSubjectId === 'none' ? null : initialSubjectId)
+    selectedSubjectId === 'none' ? null : selectedSubjectId
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Create study notes</CardTitle>
-        <CardDescription>
-          Upload a transcript, paste a YouTube URL, or import an HTML notebook
-          file into your account.
-        </CardDescription>
-      </CardHeader>
-      <form noValidate onSubmit={submitNote}>
-        <CardContent className="space-y-6">
-          <FieldGroup>
-            <Controller
-              name="subjectId"
-              control={form.control}
-              render={({ field }) => (
-                <Field>
-                  <FieldLabel htmlFor="new-note-subject">Subject</FieldLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger
-                      id="new-note-subject"
-                      className="w-full sm:w-72"
-                    >
-                      <SelectValue placeholder="Choose a subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No subject</SelectItem>
-                      {subjects.map((subject) => (
-                        <SelectItem key={subject.id} value={subject.id}>
-                          {subject.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FieldDescription>
-                    Optional folder for organizing this note.
-                  </FieldDescription>
-                </Field>
-              )}
-            />
-          </FieldGroup>
-
-          <Tabs value={activeTab}>
-            <TabsList>
-              <TabsTrigger asChild value="transcript">
-                <Link href={tabHref('transcript', subjectIdForLinks)}>
-                  Transcript file
-                </Link>
-              </TabsTrigger>
-              <TabsTrigger asChild value="youtube">
-                <Link href={tabHref('youtube', subjectIdForLinks)}>
-                  YouTube URL
-                </Link>
-              </TabsTrigger>
-              <TabsTrigger asChild value="html">
-                <Link href={tabHref('html', subjectIdForLinks)}>HTML file</Link>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="transcript" className="mt-4 space-y-4">
-              <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="new-note-file">
-                    Upload transcript
-                  </FieldLabel>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <input
-                      ref={transcriptFileInputRef}
-                      id="new-note-file"
-                      type="file"
-                      accept={acceptedTranscriptTypes}
-                      className="sr-only"
-                      onChange={handleTranscriptFileChange}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => transcriptFileInputRef.current?.click()}
-                    >
-                      <UploadIcon />
-                      Choose file
-                    </Button>
-                    <p className="text-muted-foreground flex items-center gap-2 text-sm">
-                      <FileTextIcon className="size-4" />
-                      .txt, .md, .srt, or .vtt
-                    </p>
-                  </div>
-                  <FieldDescription>
-                    Upload a transcript file or paste the text below.
-                  </FieldDescription>
-                </Field>
-
-                <Controller
-                  name="transcript"
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="new-note-transcript">
-                        Transcript text
-                      </FieldLabel>
-                      <Textarea
-                        {...field}
-                        id="new-note-transcript"
-                        placeholder="Paste transcript text here, or upload a file above..."
-                        rows={14}
-                        aria-invalid={fieldState.invalid}
-                      />
-                      {fieldState.invalid ? (
-                        <FieldError errors={[fieldState.error]} />
-                      ) : null}
-                    </Field>
-                  )}
-                />
-              </FieldGroup>
-            </TabsContent>
-
-            <TabsContent value="youtube" className="mt-4">
-              <FieldGroup>
-                <Controller
-                  name="url"
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="new-note-url">
-                        YouTube URL
-                      </FieldLabel>
-                      <Input
-                        {...field}
-                        id="new-note-url"
-                        type="url"
-                        placeholder="https://www.youtube.com/watch?v=..."
-                        aria-invalid={fieldState.invalid}
-                      />
-                      <FieldDescription>
-                        We fetch available captions from the video, then
-                        generate structured notes and a handwritten notebook.
-                      </FieldDescription>
-                      {fieldState.invalid ? (
-                        <FieldError errors={[fieldState.error]} />
-                      ) : null}
-                    </Field>
-                  )}
-                />
-              </FieldGroup>
-            </TabsContent>
-
-            <TabsContent value="html" className="mt-4 space-y-4">
-              <FieldGroup>
-                <Controller
-                  name="notebookHtml"
-                  control={form.control}
-                  render={({ fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="new-note-html-file">
-                        Upload HTML notebook
-                      </FieldLabel>
-                      <div className="flex flex-wrap items-center gap-3">
-                        <input
-                          ref={htmlFileInputRef}
-                          id="new-note-html-file"
-                          type="file"
-                          accept={acceptedHtmlTypes}
-                          className="sr-only"
-                          onChange={handleHtmlFileChange}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => htmlFileInputRef.current?.click()}
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Create study notes</CardTitle>
+          <CardDescription>
+            Upload a transcript, paste a YouTube URL, or import an HTML notebook
+            file into your account.
+          </CardDescription>
+        </CardHeader>
+        <form noValidate onSubmit={submitNote}>
+          <CardContent className="space-y-6">
+            <FieldGroup>
+              <Controller
+                name="subjectId"
+                control={form.control}
+                render={({ field }) => (
+                  <Field>
+                    <FieldLabel htmlFor="new-note-subject">Subject</FieldLabel>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger
+                          id="new-note-subject"
+                          className="w-full sm:w-72"
                         >
-                          <UploadIcon />
-                          Choose HTML file
-                        </Button>
-                        <p className="text-muted-foreground flex items-center gap-2 text-sm">
-                          <FileCode2Icon className="size-4" />
-                          {htmlFileName || '.html or .htm'}
-                        </p>
-                      </div>
-                      <FieldDescription>
-                        Import a notebook HTML file and save it directly to your
-                        account. No generation step runs for this source.
-                      </FieldDescription>
-                      {fieldState.invalid ? (
-                        <FieldError errors={[fieldState.error]} />
-                      ) : null}
-                    </Field>
-                  )}
-                />
+                          <SelectValue placeholder="Choose a subject" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No subject</SelectItem>
+                          {subjects.map((subject) => (
+                            <SelectItem key={subject.id} value={subject.id}>
+                              {subject.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setCreateSubjectOpen(true)}
+                      >
+                        <PlusIcon />
+                        New subject
+                      </Button>
+                    </div>
+                    <FieldDescription>
+                      Optional folder for organizing this note. Create one if it
+                      does not exist yet.
+                    </FieldDescription>
+                  </Field>
+                )}
+              />
+            </FieldGroup>
 
-                <Controller
-                  name="htmlTitle"
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="new-note-html-title">
-                        Note title
-                      </FieldLabel>
-                      <Input
-                        {...field}
-                        id="new-note-html-title"
-                        placeholder="Optional title for the imported notebook"
-                        aria-invalid={fieldState.invalid}
-                        disabled={!htmlFileName}
+            <Tabs value={activeTab}>
+              <TabsList>
+                <TabsTrigger asChild value="transcript">
+                  <Link href={tabHref('transcript', subjectIdForLinks)}>
+                    Transcript file
+                  </Link>
+                </TabsTrigger>
+                <TabsTrigger asChild value="youtube">
+                  <Link href={tabHref('youtube', subjectIdForLinks)}>
+                    YouTube URL
+                  </Link>
+                </TabsTrigger>
+                <TabsTrigger asChild value="html">
+                  <Link href={tabHref('html', subjectIdForLinks)}>
+                    HTML file
+                  </Link>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="transcript" className="mt-4 space-y-4">
+                <FieldGroup>
+                  <Field>
+                    <FieldLabel htmlFor="new-note-file">
+                      Upload transcript
+                    </FieldLabel>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <input
+                        ref={transcriptFileInputRef}
+                        id="new-note-file"
+                        type="file"
+                        accept={acceptedTranscriptTypes}
+                        className="sr-only"
+                        onChange={handleTranscriptFileChange}
                       />
-                      {fieldState.invalid ? (
-                        <FieldError errors={[fieldState.error]} />
-                      ) : null}
-                    </Field>
-                  )}
-                />
-              </FieldGroup>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-        <CardFooter className="mt-4">
-          <Button
-            type="submit"
-            className="w-full sm:w-auto"
-            loading={createMutation.isPending}
-          >
-            {activeTab === 'html' ? 'Save notebook' : 'Generate notes'}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => transcriptFileInputRef.current?.click()}
+                      >
+                        <UploadIcon />
+                        Choose file
+                      </Button>
+                      <p className="text-muted-foreground flex items-center gap-2 text-sm">
+                        <FileTextIcon className="size-4" />
+                        .txt, .md, .srt, or .vtt
+                      </p>
+                    </div>
+                    <FieldDescription>
+                      Upload a transcript file or paste the text below.
+                    </FieldDescription>
+                  </Field>
+
+                  <Controller
+                    name="transcript"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="new-note-transcript">
+                          Transcript text
+                        </FieldLabel>
+                        <Textarea
+                          {...field}
+                          id="new-note-transcript"
+                          placeholder="Paste transcript text here, or upload a file above..."
+                          rows={14}
+                          aria-invalid={fieldState.invalid}
+                        />
+                        {fieldState.invalid ? (
+                          <FieldError errors={[fieldState.error]} />
+                        ) : null}
+                      </Field>
+                    )}
+                  />
+                </FieldGroup>
+              </TabsContent>
+
+              <TabsContent value="youtube" className="mt-4">
+                <FieldGroup>
+                  <Controller
+                    name="url"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="new-note-url">
+                          YouTube URL
+                        </FieldLabel>
+                        <Input
+                          {...field}
+                          id="new-note-url"
+                          type="url"
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          aria-invalid={fieldState.invalid}
+                        />
+                        <FieldDescription>
+                          We fetch available captions from the video, then
+                          generate structured notes and a handwritten notebook.
+                        </FieldDescription>
+                        {fieldState.invalid ? (
+                          <FieldError errors={[fieldState.error]} />
+                        ) : null}
+                      </Field>
+                    )}
+                  />
+                </FieldGroup>
+              </TabsContent>
+
+              <TabsContent value="html" className="mt-4 space-y-4">
+                <FieldGroup>
+                  <Controller
+                    name="notebookHtml"
+                    control={form.control}
+                    render={({ fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="new-note-html-file">
+                          Upload HTML notebook
+                        </FieldLabel>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <input
+                            ref={htmlFileInputRef}
+                            id="new-note-html-file"
+                            type="file"
+                            accept={acceptedHtmlTypes}
+                            className="sr-only"
+                            onChange={handleHtmlFileChange}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => htmlFileInputRef.current?.click()}
+                          >
+                            <UploadIcon />
+                            Choose HTML file
+                          </Button>
+                          <p className="text-muted-foreground flex items-center gap-2 text-sm">
+                            <FileCode2Icon className="size-4" />
+                            {htmlFileName || '.html or .htm'}
+                          </p>
+                        </div>
+                        <FieldDescription>
+                          Import a notebook HTML file and save it directly to
+                          your account. No generation step runs for this source.
+                        </FieldDescription>
+                        {fieldState.invalid ? (
+                          <FieldError errors={[fieldState.error]} />
+                        ) : null}
+                      </Field>
+                    )}
+                  />
+
+                  <Controller
+                    name="htmlTitle"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="new-note-html-title">
+                          Note title
+                        </FieldLabel>
+                        <Input
+                          {...field}
+                          id="new-note-html-title"
+                          placeholder="Optional title for the imported notebook"
+                          aria-invalid={fieldState.invalid}
+                          disabled={!htmlFileName}
+                        />
+                        {fieldState.invalid ? (
+                          <FieldError errors={[fieldState.error]} />
+                        ) : null}
+                      </Field>
+                    )}
+                  />
+                </FieldGroup>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+          <CardFooter className="mt-4">
+            <Button
+              type="submit"
+              className="w-full sm:w-auto"
+              loading={createMutation.isPending}
+            >
+              {activeTab === 'html' ? 'Save notebook' : 'Generate notes'}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+
+      <Dialog
+        open={createSubjectOpen}
+        onOpenChange={(open) => {
+          setCreateSubjectOpen(open)
+
+          if (!open) {
+            createSubjectForm.reset()
+          }
+        }}
+      >
+        <DialogContent>
+          <form noValidate onSubmit={submitCreateSubject}>
+            <DialogHeader>
+              <DialogTitle>New subject</DialogTitle>
+              <DialogDescription>
+                Create a folder to organize this note, like Physics or Exam
+                prep.
+              </DialogDescription>
+            </DialogHeader>
+
+            <FieldGroup className="py-2">
+              <Controller
+                name="name"
+                control={createSubjectForm.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="new-note-subject-name">
+                      Subject name
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id="new-note-subject-name"
+                      placeholder="e.g. Organic Chemistry"
+                      aria-invalid={fieldState.invalid}
+                      autoFocus
+                    />
+                    {fieldState.invalid ? (
+                      <FieldError errors={[fieldState.error]} />
+                    ) : null}
+                  </Field>
+                )}
+              />
+            </FieldGroup>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCreateSubjectOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" loading={createSubjectMutation.isPending}>
+                <PlusIcon />
+                Add subject
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
