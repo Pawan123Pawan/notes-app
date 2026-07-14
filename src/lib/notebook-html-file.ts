@@ -26,7 +26,7 @@ export function parseNotebookHtmlFile(fileName: string, content: string) {
   }
 }
 
-function extractHtmlTitle(html: string) {
+export function extractHtmlTitle(html: string) {
   const match = html.match(/<title[^>]*>([^<]*)<\/title>/i)
   const title = match?.[1]?.replace(/\s+/g, ' ').trim()
 

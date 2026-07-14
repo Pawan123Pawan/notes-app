@@ -42,7 +42,10 @@ import {
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { parseNotebookHtmlFile } from '@/lib/notebook-html-file'
+import {
+  extractHtmlTitle,
+  parseNotebookHtmlFile,
+} from '@/lib/notebook-html-file'
 import { triggerRouteProgressStart } from '@/lib/route-progress'
 import { parseTranscriptFileContent } from '@/lib/transcript-file'
 import { showErrorToast } from '@/lib/utils'
@@ -196,7 +199,10 @@ export function NewNoteForm() {
           : createNoteInput.safeParse({
               sourceType: 'html',
               notebookHtml: values.notebookHtml,
-              title: values.htmlTitle || undefined,
+              title:
+                values.htmlTitle.trim() ||
+                extractHtmlTitle(values.notebookHtml) ||
+                undefined,
               subjectId,
             })
 
@@ -458,40 +464,53 @@ export function NewNoteForm() {
 
               <TabsContent value="html" className="mt-4 space-y-4">
                 <FieldGroup>
+                  <Field>
+                    <FieldLabel htmlFor="new-note-html-file">
+                      Upload HTML notebook
+                    </FieldLabel>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <input
+                        ref={htmlFileInputRef}
+                        id="new-note-html-file"
+                        type="file"
+                        accept={acceptedHtmlTypes}
+                        className="sr-only"
+                        onChange={handleHtmlFileChange}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => htmlFileInputRef.current?.click()}
+                      >
+                        <UploadIcon />
+                        Choose HTML file
+                      </Button>
+                      <p className="text-muted-foreground flex items-center gap-2 text-sm">
+                        <FileCode2Icon className="size-4" />
+                        {htmlFileName || '.html or .htm'}
+                      </p>
+                    </div>
+                    <FieldDescription>
+                      Upload an HTML file or paste the notebook HTML below. No
+                      generation step runs for this source.
+                    </FieldDescription>
+                  </Field>
+
                   <Controller
                     name="notebookHtml"
                     control={form.control}
-                    render={({ fieldState }) => (
+                    render={({ field, fieldState }) => (
                       <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="new-note-html-file">
-                          Upload HTML notebook
+                        <FieldLabel htmlFor="new-note-html-content">
+                          HTML content
                         </FieldLabel>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <input
-                            ref={htmlFileInputRef}
-                            id="new-note-html-file"
-                            type="file"
-                            accept={acceptedHtmlTypes}
-                            className="sr-only"
-                            onChange={handleHtmlFileChange}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => htmlFileInputRef.current?.click()}
-                          >
-                            <UploadIcon />
-                            Choose HTML file
-                          </Button>
-                          <p className="text-muted-foreground flex items-center gap-2 text-sm">
-                            <FileCode2Icon className="size-4" />
-                            {htmlFileName || '.html or .htm'}
-                          </p>
-                        </div>
-                        <FieldDescription>
-                          Import a notebook HTML file and save it directly to
-                          your account. No generation step runs for this source.
-                        </FieldDescription>
+                        <Textarea
+                          {...field}
+                          id="new-note-html-content"
+                          placeholder="Paste notebook HTML here, or upload a file above..."
+                          rows={14}
+                          aria-invalid={fieldState.invalid}
+                        />
                         {fieldState.invalid ? (
                           <FieldError errors={[fieldState.error]} />
                         ) : null}
@@ -512,7 +531,6 @@ export function NewNoteForm() {
                           id="new-note-html-title"
                           placeholder="Optional title for the imported notebook"
                           aria-invalid={fieldState.invalid}
-                          disabled={!htmlFileName}
                         />
                         {fieldState.invalid ? (
                           <FieldError errors={[fieldState.error]} />
