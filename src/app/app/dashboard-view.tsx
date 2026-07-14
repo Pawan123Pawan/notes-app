@@ -52,7 +52,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
-import type { NoteStatus } from '@/db/schema/note.constants'
+import {
+  noteSourceTypeLabels,
+  type NoteStatus,
+} from '@/db/schema/note.constants'
 import { triggerRouteProgressStart } from '@/lib/route-progress'
 import { showErrorToast } from '@/lib/utils'
 import { useTRPC } from '@/trpc/react'
@@ -80,7 +83,7 @@ type DashboardNote = {
   id: string
   title: string
   status: NoteStatus
-  sourceType: 'youtube' | 'transcript'
+  sourceType: keyof typeof noteSourceTypeLabels
   subjectId?: string
 }
 
@@ -251,8 +254,8 @@ function NoteCard({
               </DropdownMenu>
             </div>
           </div>
-          <p className="text-muted-foreground text-sm capitalize">
-            {note.sourceType === 'youtube' ? 'YouTube' : 'Transcript'}
+          <p className="text-muted-foreground text-sm">
+            {noteSourceTypeLabels[note.sourceType]}
           </p>
         </CardHeader>
       </Card>

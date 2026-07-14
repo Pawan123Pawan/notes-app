@@ -46,7 +46,10 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import type { NoteStatus } from '@/db/schema/note.constants'
+import {
+  noteSourceTypeLabels,
+  type NoteStatus,
+} from '@/db/schema/note.constants'
 import { triggerRouteProgressStart } from '@/lib/route-progress'
 import { showErrorToast } from '@/lib/utils'
 import { updateSubjectInput } from '@/trpc/routers/subjects/subjects.input'
@@ -81,7 +84,7 @@ type SubjectNote = {
   id: string
   title: string
   status: NoteStatus
-  sourceType: 'youtube' | 'transcript'
+  sourceType: keyof typeof noteSourceTypeLabels
   subjectId?: string
 }
 
@@ -256,8 +259,8 @@ function NoteCard({
               </DropdownMenu>
             </div>
           </div>
-          <p className="text-muted-foreground text-sm capitalize">
-            {note.sourceType === 'youtube' ? 'YouTube' : 'Transcript'}
+          <p className="text-muted-foreground text-sm">
+            {noteSourceTypeLabels[note.sourceType]}
           </p>
         </CardHeader>
       </Card>

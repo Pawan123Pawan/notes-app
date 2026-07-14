@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { noteSourceTypes } from '@/db/schema/note.constants'
+import { getNotebookHtmlMaxLength } from '@/lib/notebook-html-file'
 import { isYoutubeUrl } from '@/lib/youtube-url'
 
 export const createNoteInput = z.discriminatedUnion('sourceType', [
@@ -18,6 +19,16 @@ export const createNoteInput = z.discriminatedUnion('sourceType', [
     url: z
       .url('Enter a valid YouTube URL')
       .refine(isYoutubeUrl, 'Enter a valid YouTube URL'),
+    subjectId: z.string().optional(),
+  }),
+  z.object({
+    sourceType: z.literal('html'),
+    notebookHtml: z
+      .string()
+      .trim()
+      .min(1, 'HTML notebook is required')
+      .max(getNotebookHtmlMaxLength(), 'HTML notebook is too long'),
+    title: z.string().trim().min(1).max(200).optional(),
     subjectId: z.string().optional(),
   }),
 ])
