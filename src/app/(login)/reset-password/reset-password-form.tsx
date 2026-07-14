@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { Controller, useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { z } from 'zod'
 
 import { BaseButton, Button } from '@/components/ui/button'
@@ -26,9 +27,15 @@ import { Input } from '@/components/ui/input'
 import { authClient } from '@/lib/auth-client'
 import { showErrorToast } from '@/lib/utils'
 
-const resetPasswordSchema = z.object({
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-})
+const resetPasswordSchema = z
+  .object({
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    confirmPassword: z.string().min(1, 'Confirm your password'),
+  })
+  .refine((values) => values.password === values.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  })
 
 type ResetPasswordValues = z.infer<typeof resetPasswordSchema>
 
@@ -42,6 +49,7 @@ export function ResetPasswordForm() {
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
       password: '',
+      confirmPassword: '',
     },
   })
 
@@ -63,6 +71,9 @@ export function ResetPasswordForm() {
       return data
     },
     onSuccess: () => {
+      toast.success('Password updated', {
+        description: 'Sign in with your new password.',
+      })
       router.push('/login')
       router.refresh()
     },
@@ -119,6 +130,27 @@ export function ResetPasswordForm() {
                   <Input
                     {...field}
                     id="reset-password"
+                    type="password"
+                    autoComplete="new-password"
+                    aria-invalid={fieldState.invalid}
+                  />
+                  {fieldState.invalid ? (
+                    <FieldError errors={[fieldState.error]} />
+                  ) : null}
+                </Field>
+              )}
+            />
+            <Controller
+              name="confirmPassword"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="reset-confirm-password">
+                    Confirm password
+                  </FieldLabel>
+                  <Input
+                    {...field}
+                    id="reset-confirm-password"
                     type="password"
                     autoComplete="new-password"
                     aria-invalid={fieldState.invalid}

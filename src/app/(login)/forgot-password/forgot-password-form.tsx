@@ -69,7 +69,7 @@ export function ForgotPasswordForm() {
         <CardTitle>Forgot password</CardTitle>
         <CardDescription>
           {submitted
-            ? 'If an account exists for that email, we sent a reset link. Check your server logs in development.'
+            ? 'If an account exists for that email, we sent a reset link. Check your inbox (and spam folder).'
             : 'Enter your email and we will send you a reset link.'}
         </CardDescription>
       </CardHeader>

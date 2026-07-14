@@ -17,6 +17,16 @@ const envSchema = z.object({
   AI_GATEWAY_MODEL: z.string().min(1).optional(),
   /** Override Gemini OpenAI-compatible base URL if needed. */
   AI_GATEWAY_BASE_URL: z.string().url().optional(),
+  /** Nodemailer SMTP (required in production to send reset emails). */
+  SMTP_HOST: z.string().min(1).optional(),
+  SMTP_PORT: z.coerce.number().int().positive().optional(),
+  SMTP_SECURE: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => (value === undefined ? undefined : value === 'true')),
+  SMTP_USER: z.string().min(1).optional(),
+  SMTP_PASS: z.string().min(1).optional(),
+  SMTP_FROM: z.string().min(1).optional(),
 })
 
 function loadEnv() {

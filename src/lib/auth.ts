@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth'
 import { nextCookies } from 'better-auth/next-js'
 
+import { sendEmail } from '@/lib/email'
 import { getAppUrl } from '@/lib/env'
 
 async function createAuth() {
@@ -16,17 +17,44 @@ async function createAuth() {
     database: mongodbAdapter(db, { client }),
     emailAndPassword: {
       enabled: true,
+      revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ user, url }) => {
-        console.log(`[auth] Password reset for ${user.email}: ${url}`)
-      },
-      onPasswordReset: async ({ user }) => {
-        console.log(`[auth] Password reset completed for ${user.email}`)
+        void sendEmail({
+          to: user.email,
+          subject: 'Reset your Notes App password',
+          text: [
+            `Hi ${user.name || 'there'},`,
+            '',
+            'We received a request to reset your password.',
+            `Open this link to choose a new password: ${url}`,
+            '',
+            'If you did not request this, you can ignore this email.',
+          ].join('\n'),
+          html: `
+            <p>Hi ${user.name || 'there'},</p>
+            <p>We received a request to reset your password.</p>
+            <p><a href="${url}">Reset your password</a></p>
+            <p>If you did not request this, you can ignore this email.</p>
+          `,
+        })
       },
     },
     emailVerification: {
       sendOnSignUp: false,
       sendVerificationEmail: async ({ user, url }) => {
-        console.log(`[auth] Verify email for ${user.email}: ${url}`)
+        void sendEmail({
+          to: user.email,
+          subject: 'Verify your Notes App email',
+          text: [
+            `Hi ${user.name || 'there'},`,
+            '',
+            `Verify your email by opening this link: ${url}`,
+          ].join('\n'),
+          html: `
+            <p>Hi ${user.name || 'there'},</p>
+            <p><a href="${url}">Verify your email</a></p>
+          `,
+        })
       },
     },
     plugins: [nextCookies()],
