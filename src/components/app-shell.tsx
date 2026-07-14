@@ -7,6 +7,7 @@ import { LayoutDashboardIcon, NotebookPenIcon, PlusIcon } from 'lucide-react'
 
 import { AppShellUserMenu } from '@/components/app-shell-user-menu'
 import { RouteTransitionProgress } from '@/components/route-transition-progress'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { useRouteTransitionProgress } from '@/hooks/use-route-transition-progress'
 import {
   Sidebar,
@@ -124,7 +125,10 @@ function AppShellChrome({ children }: AppShellProps) {
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
-          <SidebarFooter>
+          <SidebarFooter className="gap-2">
+            <div className="flex items-center justify-end px-2 group-data-[collapsible=icon]:justify-center">
+              <ThemeToggle />
+            </div>
             <AppShellUserMenu />
           </SidebarFooter>
           <SidebarRail />

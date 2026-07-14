@@ -1,13 +1,11 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono, Inter } from 'next/font/google'
+import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { AppShell } from '@/components/app-shell'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
 import { cn } from '@/lib/utils'
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
 const geistSans = Geist({
   variable: '--font-sans',
@@ -35,7 +33,6 @@ export default function RootLayout({ children }: React.PropsWithChildren) {
         geistSans.variable,
         geistMono.variable,
         'font-sans',
-        inter.variable,
       )}
       suppressHydrationWarning
     >
@@ -45,6 +42,7 @@ export default function RootLayout({ children }: React.PropsWithChildren) {
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
+          themes={['light', 'dark', 'system']}
         >
           <Toaster />
           <QueryProvider>
