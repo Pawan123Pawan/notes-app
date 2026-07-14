@@ -52,15 +52,11 @@ type AppShellProps = {
   children: React.ReactNode
 }
 
-function isNotebookPdfOnlyRoute(pathname: string) {
-  return /^\/app\/notes\/[^/]+\/view\/?$/.test(pathname)
-}
-
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
   const isAppRoute = pathname === '/app' || pathname.startsWith('/app/')
 
-  if (!isAppRoute || isNotebookPdfOnlyRoute(pathname)) {
+  if (!isAppRoute) {
     return children
   }
 
@@ -133,7 +129,7 @@ function AppShellChrome({ children }: AppShellProps) {
           </SidebarFooter>
           <SidebarRail />
         </Sidebar>
-        <SidebarInset>
+        <SidebarInset className="min-h-0">
           {/* <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
             <SidebarTrigger />
             <Separator
@@ -141,7 +137,9 @@ function AppShellChrome({ children }: AppShellProps) {
               className="mr-2 data-vertical:h-4 data-vertical:self-auto"
             />
           </header> */}
-          <div className="flex flex-1 flex-col">{children}</div>
+          <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+            {children}
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

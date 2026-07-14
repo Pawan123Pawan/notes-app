@@ -57,7 +57,7 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
   }
 
   return (
-    <div className="flex h-screen flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col">
       {isProcessingStatus(note.status) ? (
         <Card>
           <CardContent className="flex items-center gap-3 py-6">
@@ -90,7 +90,6 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
 
       {note.status === 'completed' && note.notebookHtml ? (
         <NotebookPdfViewer
-          noteId={noteId}
           title={note.title}
           html={note.notebookHtml}
           subjectId={note.subjectId}
