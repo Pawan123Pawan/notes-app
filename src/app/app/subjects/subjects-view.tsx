@@ -1,12 +1,29 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FolderOpen, Plus } from 'lucide-react'
+import {
+  FolderOpen,
+  MoreHorizontal,
+  Plus,
+  Settings2,
+  Trash2,
+} from 'lucide-react'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { SubjectsGridSkeleton } from '@/components/app-skeletons'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -15,6 +32,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Field,
   FieldError,
@@ -29,6 +54,142 @@ import { useTRPC } from '@/trpc/react'
 
 type CreateSubjectFormValues = {
   name: string
+}
+
+function SubjectCard({
+  subject,
+}: {
+  subject: { id: string; name: string; noteCount: number }
+}) {
+  const trpc = useTRPC()
+  const queryClient = useQueryClient()
+  const [deleteOpen, setDeleteOpen] = useState(false)
+
+  const manageHref = `/app/subjects/${subject.id}`
+  const newNoteHref = `/app/new?subjectId=${subject.id}`
+  const notesHref = `/app?subjectId=${subject.id}`
+
+  const deleteMutation = useMutation(
+    trpc.subjects.delete.mutationOptions({
+      onSuccess: async () => {
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: trpc.subjects.list.queryKey(),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: trpc.notes.list.queryKey(),
+          }),
+        ])
+        toast.success('Subject deleted')
+      },
+      onError: (error) => {
+        showErrorToast(
+          'Could not delete subject',
+          error,
+          'Unable to delete this subject.',
+        )
+      },
+    }),
+  )
+
+  return (
+    <>
+      <Card className="hover:bg-muted/40 h-full transition-colors">
+        <CardHeader className="gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <Link
+              href={manageHref}
+              className="min-w-0 flex-1"
+              onClick={() => triggerRouteProgressStart(manageHref)}
+            >
+              <CardTitle className="text-base hover:underline">
+                {subject.name}
+              </CardTitle>
+            </Link>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label="Subject actions"
+                >
+                  <MoreHorizontal />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-48">
+                <DropdownMenuGroup>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href={newNoteHref}
+                      onClick={() => triggerRouteProgressStart(newNoteHref)}
+                    >
+                      <Plus />
+                      New note
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href={notesHref}
+                      onClick={() => triggerRouteProgressStart(notesHref)}
+                    >
+                      <FolderOpen />
+                      View notes
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href={manageHref}
+                      onClick={() => triggerRouteProgressStart(manageHref)}
+                    >
+                      <Settings2 />
+                      Manage subject
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  <Trash2 />
+                  Delete subject
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <CardDescription>
+            {subject.noteCount} {subject.noteCount === 1 ? 'note' : 'notes'}
+          </CardDescription>
+        </CardHeader>
+      </Card>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this subject?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Notes in this subject will be kept but removed from the folder.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate({ subjectId: subject.id })}
+            >
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete subject'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
 }
 
 export function SubjectsView() {
@@ -132,23 +293,7 @@ export function SubjectsView() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {subjects.map((subject) => (
-            <Link
-              key={subject.id}
-              href={`/app/subjects/${subject.id}`}
-              onClick={() =>
-                triggerRouteProgressStart(`/app/subjects/${subject.id}`)
-              }
-            >
-              <Card className="hover:bg-muted/40 h-full transition-colors">
-                <CardHeader>
-                  <CardTitle className="text-base">{subject.name}</CardTitle>
-                  <CardDescription>
-                    {subject.noteCount}{' '}
-                    {subject.noteCount === 1 ? 'note' : 'notes'}
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
+            <SubjectCard key={subject.id} subject={subject} />
           ))}
         </div>
       )}
