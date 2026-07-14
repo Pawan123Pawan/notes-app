@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useMutation } from '@tanstack/react-query'
 import { ChevronsUpDownIcon, LogOutIcon } from 'lucide-react'
 
+import { ThemeMenuItems } from '@/components/theme-toggle'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -102,6 +103,8 @@ export function AppShellUserMenu() {
                 </div>
               </div>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <ThemeMenuItems />
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"

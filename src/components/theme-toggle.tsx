@@ -28,23 +28,46 @@ type ThemeToggleProps = {
   className?: string
 }
 
-export function ThemeToggle({ className }: ThemeToggleProps) {
-  const { theme, setTheme, resolvedTheme } = useTheme()
+export function ThemeMenuItems() {
+  const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
   useMountEffect(() => {
     setMounted(true)
   })
 
-  const active =
-    themes.find((item) => item.value === theme) ??
-    themes.find((item) => item.value === 'system')!
+  return (
+    <>
+      <DropdownMenuLabel>Theme</DropdownMenuLabel>
+      <DropdownMenuRadioGroup
+        value={mounted ? (theme ?? 'system') : 'system'}
+        onValueChange={(value) => setTheme(value as ThemeMode)}
+      >
+        {themes.map((item) => (
+          <DropdownMenuRadioItem key={item.value} value={item.value}>
+            <item.icon />
+            {item.label}
+          </DropdownMenuRadioItem>
+        ))}
+      </DropdownMenuRadioGroup>
+    </>
+  )
+}
+
+export function ThemeToggle({ className }: ThemeToggleProps) {
+  const { resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useMountEffect(() => {
+    setMounted(true)
+  })
+
   const ActiveIcon =
     mounted && resolvedTheme === 'dark'
       ? MoonIcon
       : mounted && resolvedTheme === 'light'
         ? SunIcon
-        : active.icon
+        : MonitorIcon
 
   return (
     <DropdownMenu>
@@ -59,18 +82,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-40">
-        <DropdownMenuLabel>Theme</DropdownMenuLabel>
-        <DropdownMenuRadioGroup
-          value={mounted ? (theme ?? 'system') : 'system'}
-          onValueChange={(value) => setTheme(value as ThemeMode)}
-        >
-          {themes.map((item) => (
-            <DropdownMenuRadioItem key={item.value} value={item.value}>
-              <item.icon />
-              {item.label}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
+        <ThemeMenuItems />
       </DropdownMenuContent>
     </DropdownMenu>
   )

@@ -6,10 +6,10 @@ import { useQuery } from '@tanstack/react-query'
 import { NoteDetailSkeleton } from '@/components/app-skeletons'
 import { BaseButton } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Spinner } from '@/components/ui/spinner'
 import type { NoteStatus } from '@/db/schema/note.constants'
 import { useTRPC } from '@/trpc/react'
 
+import { GeneratingNotebookState } from './generating-notebook-state'
 import { NotebookPdfViewer } from './notebook-pdf-viewer'
 
 export type NoteDetailViewProps = {
@@ -58,20 +58,7 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {isProcessingStatus(note.status) ? (
-        <Card>
-          <CardContent className="flex items-center gap-3 py-6">
-            <Spinner />
-            <div>
-              <p className="font-medium">Creating your notebook</p>
-              <p className="text-muted-foreground text-sm">
-                Generating detailed Hindi notes and colorful A4 notebook pages.
-                This can take a few minutes for better quality.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
+      {isProcessingStatus(note.status) ? <GeneratingNotebookState /> : null}
 
       {note.status === 'failed' ? (
         <Card className="border-destructive/40">
