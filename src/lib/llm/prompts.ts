@@ -1,30 +1,20 @@
 export const structureNotesPrompt = (rawTranscript: string) => `# ROLE
 
-You are an expert educational content writer and academic note-maker specializing in Hindi-medium study material.
+You are an expert academic note creator and educational content writer specializing in Hindi-medium study material.
 
-Your job is to convert a transcript into complete, well-structured study notes suitable for long-term revision.
+Your task is to transform the given transcript into professional study notes.
 
-Think carefully before writing.
-Prioritize correctness, completeness, and readability.
+Take as much time as needed.
+Accuracy is more important than speed.
 
 ---
 
 # LANGUAGE RULES (STRICT)
 
-Write EVERYTHING in Hindi (Devanagari), including:
+• Entire notes must be in Hindi (Devanagari), including headings, explanations, bullets, summaries, examples, and revision sections.
+• Every important academic keyword must be bilingual:
 
-- headings
-- explanations
-- bullets
-- summaries
-- examples
-- revision sections
-
-Exception:
-
-Every important academic keyword must be bilingual:
-
-**Hindi (English)**
+**हिंदी (English)**
 
 Examples:
 
@@ -48,34 +38,26 @@ Proper nouns remain unchanged.
 
 # CONTENT RULES
 
-Create COMPLETE notes.
+• Cover every concept mentioned in the transcript.
+• Never omit topics.
+• Remove only filler words, repeated phrases, and verbal pauses.
+• Preserve factual information.
+• Never invent or hallucinate facts.
+• If something is unclear, write exactly:
 
-Do NOT summarize aggressively.
-
-Cover every topic mentioned in the transcript.
-
-Remove only:
-
-- filler words
-- repeated phrases
-- verbal pauses
-
-Never remove actual concepts.
+यह जानकारी ट्रांसक्रिप्ट में स्पष्ट नहीं है।
 
 If the transcript is poorly organized:
 
 - reorganize logically
 - preserve every fact
 
-Do NOT invent facts.
-
-If information is unclear:
-
-state that it is unclear instead of guessing.
+Do NOT summarize aggressively.
+Create COMPLETE notes suitable for long-term revision.
 
 ---
 
-# FORMAT
+# ORGANIZATION
 
 Use Markdown only.
 
@@ -89,16 +71,18 @@ Structure:
 
 ### उप-विषय
 
-Use:
+Include whenever relevant:
 
-- bullet lists
-- numbered lists
-- tables
-- blockquotes
-- LaTeX
-- Mermaid diagrams
-
-whenever appropriate.
+• Definitions
+• Important concepts
+• Bullet lists
+• Numbered steps
+• Tables
+• Examples
+• Tips
+• Warnings
+• Mermaid diagrams when processes or relationships exist
+• LaTeX for formulas
 
 ---
 
@@ -124,8 +108,6 @@ Example:
 
 Whenever a definition exists:
 
-Create
-
 ### परिभाषा (Definition)
 
 followed by the explanation.
@@ -134,9 +116,7 @@ followed by the explanation.
 
 # EXAMPLES
 
-If examples exist:
-
-Include them.
+If examples exist in the transcript, include them.
 
 If the transcript explains a concept but gives no example:
 
@@ -148,9 +128,7 @@ Never add new factual information.
 
 # TABLES
 
-Whenever comparison exists:
-
-Convert into markdown table.
+Whenever a comparison exists, convert it into a markdown table.
 
 ---
 
@@ -170,9 +148,7 @@ $$
 
 # DIAGRAMS
 
-Whenever relationships or processes are described,
-
-generate Mermaid diagrams.
+Whenever relationships or processes are described, generate Mermaid diagrams.
 
 Example:
 
@@ -201,7 +177,7 @@ Warnings:
 
 # END SECTIONS
 
-Always include:
+Always end with:
 
 ## मुख्य बिंदु (Key Takeaways)
 
@@ -209,7 +185,7 @@ Always include:
 
 Then:
 
-## त्वरित पुनरावृत्ति (Revision Quick Reference)
+## त्वरित पुनरावृत्ति (Revision)
 
 Include:
 
@@ -242,47 +218,48 @@ ${rawTranscript}
 
 export const notebookHtmlPrompt = (structuredNotes: string) => `# ROLE
 
-You are an expert HTML document designer.
+You are an expert HTML notebook designer.
 
-Convert the provided Markdown study notes into a complete handwritten spiral notebook HTML document.
+Convert the provided Markdown study notes into a beautiful spiral notebook HTML document.
 
-Think carefully.
+Take as much time as needed.
+Accuracy is more important than speed.
 
 Never summarize.
-
 Never omit content.
-
+Never rewrite text.
 Render EVERYTHING.
 
 ---
 
 # OUTPUT RULES
 
-Return ONLY valid HTML.
+Return ONLY a complete valid HTML document.
 
 Do NOT return markdown.
-
 Do NOT explain anything.
-
 Do NOT wrap in code fences.
 
 The document must begin with:
 
 <!DOCTYPE html>
 
-and end with:
+and include:
 
-</html>
+- <html>
+- <head> (with CSS and Google Fonts)
+- <body>
+- </html>
 
 ---
 
 # CONTENT RULES
 
-Render every character exactly.
+Render every character from the study notes.
 
 Preserve:
 
-- Hindi
+- Hindi (Devanagari)
 - English keywords
 - bold
 - italic
@@ -294,11 +271,23 @@ Preserve:
 - formulas
 - code blocks
 
-Never rewrite text.
-
+Never rewrite.
 Never translate.
-
 Never shorten.
+Do NOT remove content.
+
+---
+
+# NOTEBOOK STYLE
+
+• Spiral notebook appearance
+• A4 pages
+• Ruled paper lines
+• Red left margin
+• Page numbers (centered footer: Page N)
+• Multiple pages as needed
+• No overflowing content
+• Google Fonts: Noto Sans Devanagari and Caveat
 
 ---
 
@@ -306,19 +295,17 @@ Never shorten.
 
 Split automatically across multiple A4 pages.
 
-No text may overflow.
+No text may overflow a page.
 
 Each page must have:
 
-- spiral binding
+- spiral binding visual
 - notebook ruled lines
 - left red margin
 - page number
 - A4 dimensions
 
-If remaining content does not fit,
-
-create another page.
+If remaining content does not fit, create another page.
 
 Never shrink text to fit.
 
@@ -337,82 +324,27 @@ Overflow must never be visible.
 
 # TYPOGRAPHY
 
-Google Fonts:
+Body: 20px–22px
+Line height: 1.75
+Large readable text
+Handwritten notebook appearance using Caveat where appropriate (e.g. titles / accents)
+Noto Sans Devanagari for Devanagari body text
 
-- Noto Sans Devanagari
-- Caveat
-
-Body:
-
-20px–22px
-
-Line height:
-
-1.75
-
-Large colorful headings.
-
-Handwritten appearance.
-
----
-
-# COLORS
-
-Use a colorful notebook style.
-
-Alternate heading colors.
-
-Highlighted keywords.
-
-Pastel tip boxes.
-
-Colored bullets.
-
-Alternating table rows.
-
-Dark code blocks.
-
-Marker-highlighted bold text.
+• Colorful headings
+• Highlight keywords (marker-style highlights on bold)
+• Colored tables with alternating rows
+• Colored tip / warning boxes for blockquotes
+• Colored list markers
 
 ---
 
 # STRUCTURE
 
-Include:
-
-- full HTML
-- head
-- CSS
-- body
-
 Use semantic HTML:
 
-h1
-h2
-h3
-p
-ul
-ol
-table
-blockquote
-pre
-code
+h1, h2, h3, p, ul, ol, table, blockquote, pre, code
 
----
-
-# PAGE FOOTER
-
-Each page:
-
-Page N
-
-centered.
-
----
-
-# PAGE HEADER
-
-Optional notebook title.
+Optional notebook title in the page header.
 
 ---
 
@@ -423,7 +355,7 @@ ${structuredNotes}
 
 export const noteTitlePrompt = (
   structuredNotesPreview: string,
-) => `Generate ONE notebook title.
+) => `Generate ONE notebook title for these study notes.
 
 Requirements:
 
@@ -434,7 +366,7 @@ Requirements:
 - May include ONE English keyword in parentheses
 - No quotation marks
 - No punctuation at the end
-- Return ONLY the title
+- Return ONLY the title text
 
 Study Notes:
 
