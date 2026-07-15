@@ -22,6 +22,7 @@ import {
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
@@ -51,6 +52,90 @@ export type AppShellProps = {
   children: React.ReactNode
 }
 
+function AppShellChrome({ children }: AppShellProps) {
+  const pathname = usePathname()
+  const { setOpenMobile } = useSidebar()
+
+  return (
+    <>
+      <RouteTransitionProgress />
+      <Sidebar collapsible="icon" variant="inset">
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" asChild>
+                <Link href="/app" onClick={() => setOpenMobile(false)}>
+                  <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                    <NotebookPenIcon className="size-4" />
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">Notes App</span>
+                    <span className="text-muted-foreground truncate text-xs">
+                      Study workspace
+                    </span>
+                  </div>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+          <div className="absolute top-4 -right-4 z-50 hidden md:block">
+            <SidebarTrigger className="size-8 cursor-pointer" />
+          </div>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={item.isActive(pathname)}
+                      tooltip={item.label}
+                    >
+                      <Link
+                        href={item.href}
+                        onClick={() => setOpenMobile(false)}
+                      >
+                        <item.icon />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+        <SidebarFooter>
+          <AppShellUserMenu />
+        </SidebarFooter>
+        <SidebarRail />
+      </Sidebar>
+      <SidebarInset className="min-h-0">
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4 md:hidden">
+          <SidebarTrigger className="-ml-1" />
+          <Separator
+            orientation="vertical"
+            className="mr-1 data-vertical:h-4 data-vertical:self-auto"
+          />
+          <Link
+            href="/app"
+            onClick={() => setOpenMobile(false)}
+            className="truncate text-sm font-medium"
+          >
+            Notes App
+          </Link>
+        </header>
+        <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+          {children}
+        </div>
+      </SidebarInset>
+    </>
+  )
+}
+
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
   const isAppRoute = pathname === '/app' || pathname.startsWith('/app/')
@@ -62,71 +147,7 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <TooltipProvider>
       <SidebarProvider>
-        <RouteTransitionProgress />
-        <Sidebar collapsible="icon" variant="inset">
-          <SidebarHeader>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton size="lg" asChild>
-                  <Link href="/app">
-                    <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                      <NotebookPenIcon className="size-4" />
-                    </div>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-semibold">Notes App</span>
-                      <span className="text-muted-foreground truncate text-xs">
-                        Study workspace
-                      </span>
-                    </div>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-            <div className="absolute top-4 -right-4 z-50 hidden md:block">
-              <SidebarTrigger className="size-8 cursor-pointer" />
-            </div>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Workspace</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {navItems.map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={item.isActive(pathname)}
-                        tooltip={item.label}
-                      >
-                        <Link href={item.href}>
-                          <item.icon />
-                          <span>{item.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-          <SidebarFooter>
-            <AppShellUserMenu />
-          </SidebarFooter>
-          <SidebarRail />
-        </Sidebar>
-        <SidebarInset className="min-h-0">
-          <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4 md:hidden">
-            <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-1 data-vertical:h-4 data-vertical:self-auto"
-            />
-            <span className="truncate text-sm font-medium">Notes App</span>
-          </header>
-          <div className="flex min-h-0 flex-1 flex-col overflow-auto">
-            {children}
-          </div>
-        </SidebarInset>
+        <AppShellChrome>{children}</AppShellChrome>
       </SidebarProvider>
     </TooltipProvider>
   )
