@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMutation } from '@tanstack/react-query'
 import { ChevronsUpDownIcon, LogOutIcon } from 'lucide-react'
@@ -19,8 +20,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
+import { useMountEffect } from '@/hooks/use-mount-effect'
 import { authClient } from '@/lib/auth-client'
 import { showErrorToast } from '@/lib/utils'
+
+type SessionData = Awaited<ReturnType<typeof authClient.getSession>>['data']
 
 function getInitials(name: string | undefined, email: string | undefined) {
   const source = name?.trim() || email?.trim() || '?'
@@ -36,7 +40,25 @@ function getInitials(name: string | undefined, email: string | undefined) {
 export function AppShellUserMenu() {
   const router = useRouter()
   const { isMobile } = useSidebar()
-  const { data: session, isPending } = authClient.useSession()
+  const [session, setSession] = useState<SessionData>(null)
+  const [isPending, setIsPending] = useState(true)
+
+  useMountEffect(() => {
+    let cancelled = false
+
+    void authClient.getSession().then((result) => {
+      if (cancelled) {
+        return
+      }
+
+      setSession(result.data)
+      setIsPending(false)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  })
 
   const signOutMutation = useMutation({
     mutationFn: async () => {
@@ -46,6 +68,7 @@ export function AppShellUserMenu() {
       }
     },
     onSuccess: () => {
+      setSession(null)
       router.push('/login')
       router.refresh()
     },
