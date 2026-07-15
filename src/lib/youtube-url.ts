@@ -1,5 +1,7 @@
 const youtubeHostPattern =
-  /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\//
+  /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be|m\.youtube\.com)\//
+
+const pathVideoIdPattern = /^\/(?:shorts|embed|live|v|watch)\/([^/?#]+)/
 
 export function isYoutubeUrl(url: string) {
   return youtubeHostPattern.test(url)
@@ -8,26 +10,22 @@ export function isYoutubeUrl(url: string) {
 export function extractYoutubeVideoId(url: string) {
   try {
     const parsed = new URL(url)
+    const hostname = parsed.hostname.replace(/^www\./, '')
 
-    if (parsed.hostname === 'youtu.be') {
+    if (hostname === 'youtu.be') {
       const id = parsed.pathname.replace(/^\//, '').split('/')[0]
       return id || null
     }
 
-    if (parsed.hostname.includes('youtube.com')) {
+    if (hostname === 'youtube.com' || hostname === 'm.youtube.com') {
       const fromQuery = parsed.searchParams.get('v')
       if (fromQuery) {
         return fromQuery
       }
 
-      const shortsMatch = parsed.pathname.match(/^\/shorts\/([^/?]+)/)
-      if (shortsMatch?.[1]) {
-        return shortsMatch[1]
-      }
-
-      const embedMatch = parsed.pathname.match(/^\/embed\/([^/?]+)/)
-      if (embedMatch?.[1]) {
-        return embedMatch[1]
+      const pathMatch = parsed.pathname.match(pathVideoIdPattern)
+      if (pathMatch?.[1]) {
+        return pathMatch[1]
       }
     }
   } catch {
