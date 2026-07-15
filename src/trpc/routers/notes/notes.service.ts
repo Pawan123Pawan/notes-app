@@ -19,6 +19,7 @@ import type {
   GetNoteByIdInput,
   ListNotesInput,
   UpdateNoteSubjectInput,
+  UpdateNoteTitleInput,
 } from '@/trpc/routers/notes/notes.input'
 
 export type NoteSummary = {
@@ -298,6 +299,35 @@ export async function listNotes(
     items: page.map((note) => toNoteSummary(note)),
     nextCursor,
   }
+}
+
+export async function updateNoteTitle(
+  userId: string,
+  input: UpdateNoteTitleInput,
+): Promise<NoteSummary> {
+  if (!mongoose.isValidObjectId(input.noteId)) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Invalid note id',
+    })
+  }
+
+  await connectDB()
+
+  const note = await Note.findOneAndUpdate(
+    { _id: input.noteId, userId },
+    { title: input.title },
+    { new: true },
+  )
+
+  if (!note) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: 'Note not found',
+    })
+  }
+
+  return toNoteSummary(note)
 }
 
 export async function updateNoteSubject(

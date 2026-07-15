@@ -62,4 +62,15 @@ export const updateNoteSubjectInput = z.object({
 
 export type UpdateNoteSubjectInput = z.infer<typeof updateNoteSubjectInput>
 
+export const updateNoteTitleInput = z.object({
+  noteId: z.string().min(1),
+  title: z
+    .string()
+    .trim()
+    .min(1, 'Title is required')
+    .max(200, 'Title is too long'),
+})
+
+export type UpdateNoteTitleInput = z.infer<typeof updateNoteTitleInput>
+
 export const noteSourceTypeSchema = z.enum(noteSourceTypes)

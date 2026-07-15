@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -8,6 +8,7 @@ import {
   CopyIcon,
   FolderOpenIcon,
   MoreHorizontalIcon,
+  PencilIcon,
   Trash2Icon,
 } from 'lucide-react'
 import { Controller, useForm } from 'react-hook-form'
@@ -57,6 +58,7 @@ import {
 } from '@/db/schema/note.constants'
 import { triggerRouteProgressStart } from '@/lib/route-progress'
 import { showErrorToast } from '@/lib/utils'
+import { updateNoteTitleInput } from '@/trpc/routers/notes/notes.input'
 import { updateSubjectInput } from '@/trpc/routers/subjects/subjects.input'
 import { useTRPC } from '@/trpc/react'
 
@@ -110,8 +112,14 @@ function NoteCard({
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const skipTitleBlurSaveRef = useRef(false)
 
   const noteHref = `/app/notes/${note.id}`
+
+  const titleForm = useForm<{ title: string }>({
+    values: { title: note.title },
+  })
 
   const invalidateNoteQueries = async () => {
     await Promise.all([
@@ -128,6 +136,23 @@ function NoteCard({
       }),
     ])
   }
+
+  const updateTitleMutation = useMutation(
+    trpc.notes.updateTitle.mutationOptions({
+      onSuccess: async () => {
+        await invalidateNoteQueries()
+        setIsEditingTitle(false)
+        toast.success('Title updated')
+      },
+      onError: (error) => {
+        showErrorToast(
+          'Could not rename note',
+          error,
+          'Unable to update the title.',
+        )
+      },
+    }),
+  )
 
   const updateSubjectMutation = useMutation(
     trpc.notes.updateSubject.mutationOptions({
@@ -177,20 +202,95 @@ function NoteCard({
     }
   }
 
+  const startEditingTitle = () => {
+    titleForm.reset({ title: note.title })
+    setIsEditingTitle(true)
+  }
+
+  const cancelEditingTitle = () => {
+    skipTitleBlurSaveRef.current = true
+    titleForm.reset({ title: note.title })
+    setIsEditingTitle(false)
+  }
+
+  const submitTitle = titleForm.handleSubmit((values) => {
+    const input = updateNoteTitleInput.safeParse({
+      noteId: note.id,
+      title: values.title,
+    })
+
+    if (!input.success) {
+      for (const issue of input.error.issues) {
+        if (issue.path[0] === 'title') {
+          titleForm.setError('title', { message: issue.message })
+        }
+      }
+      return
+    }
+
+    if (input.data.title === note.title) {
+      setIsEditingTitle(false)
+      return
+    }
+
+    updateTitleMutation.mutate(input.data)
+  })
+
   return (
     <>
       <Card className="hover:bg-muted/40 h-full transition-colors">
         <CardHeader className="gap-3">
           <div className="flex items-start justify-between gap-3">
-            <Link
-              href={noteHref}
-              className="min-w-0 flex-1"
-              onClick={() => triggerRouteProgressStart(noteHref)}
-            >
-              <CardTitle className="line-clamp-2 text-base hover:underline">
-                {note.title}
-              </CardTitle>
-            </Link>
+            {isEditingTitle ? (
+              <form
+                noValidate
+                className="min-w-0 flex-1"
+                onSubmit={submitTitle}
+              >
+                <Controller
+                  name="title"
+                  control={titleForm.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <Input
+                        {...field}
+                        aria-label="Note title"
+                        aria-invalid={fieldState.invalid}
+                        autoFocus
+                        disabled={updateTitleMutation.isPending}
+                        onBlur={() => {
+                          field.onBlur()
+                          if (skipTitleBlurSaveRef.current) {
+                            skipTitleBlurSaveRef.current = false
+                            return
+                          }
+                          void submitTitle()
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Escape') {
+                            event.preventDefault()
+                            cancelEditingTitle()
+                          }
+                        }}
+                      />
+                      {fieldState.invalid ? (
+                        <FieldError errors={[fieldState.error]} />
+                      ) : null}
+                    </Field>
+                  )}
+                />
+              </form>
+            ) : (
+              <Link
+                href={noteHref}
+                className="min-w-0 flex-1"
+                onClick={() => triggerRouteProgressStart(noteHref)}
+              >
+                <CardTitle className="line-clamp-2 text-base hover:underline">
+                  {note.title}
+                </CardTitle>
+              </Link>
+            )}
             <div className="flex shrink-0 items-center gap-2">
               <Badge variant={statusVariants[note.status]}>
                 {statusLabels[note.status]}
@@ -209,6 +309,11 @@ function NoteCard({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-48">
                   <DropdownMenuGroup>
+                    <DropdownMenuItem onClick={startEditingTitle}>
+                      <PencilIcon />
+                      Rename
+                    </DropdownMenuItem>
+
                     {note.status === 'completed' ? (
                       <DropdownMenuItem onClick={copyNotebookHtml}>
                         <CopyIcon />
