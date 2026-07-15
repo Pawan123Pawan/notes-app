@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "/usr/bin/node ./node_modules/next/dist/bin/next dev --webpack",
-    "build": "/usr/bin/node ./node_modules/next/dist/bin/next build",
-    "start": "/usr/bin/node ./node_modules/next/dist/bin/next start",
+    "dev": "next dev --webpack",
+    "build": "next build",
+    "start": "next start",
     "lint": "eslint --fix",
     "format": "prettier --write --cache --ignore-path .gitignore --ignore-path .prettierignore --no-error-on-unmatched-pattern .",
     "typecheck": "tsc --noEmit",
