@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -27,6 +27,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
@@ -39,7 +47,12 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Field, FieldError } from '@/components/ui/field'
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
   noteSourceTypeLabels,
@@ -89,8 +102,7 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const [isEditingTitle, setIsEditingTitle] = useState(false)
-  const skipTitleBlurSaveRef = useRef(false)
+  const [renameOpen, setRenameOpen] = useState(false)
 
   const noteHref = `/app/notes/${note.id}`
 
@@ -125,7 +137,7 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
     trpc.notes.updateTitle.mutationOptions({
       onSuccess: async () => {
         await invalidateNoteQueries()
-        setIsEditingTitle(false)
+        setRenameOpen(false)
         toast.success('Title updated')
       },
       onError: (error) => {
@@ -186,15 +198,9 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
     }
   }
 
-  const startEditingTitle = () => {
+  const openRename = () => {
     titleForm.reset({ title: note.title })
-    setIsEditingTitle(true)
-  }
-
-  const cancelEditingTitle = () => {
-    skipTitleBlurSaveRef.current = true
-    titleForm.reset({ title: note.title })
-    setIsEditingTitle(false)
+    setRenameOpen(true)
   }
 
   const submitTitle = titleForm.handleSubmit((values) => {
@@ -213,7 +219,7 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
     }
 
     if (input.data.title === note.title) {
-      setIsEditingTitle(false)
+      setRenameOpen(false)
       return
     }
 
@@ -225,56 +231,15 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
       <Card className="hover:bg-muted/40 h-full transition-colors">
         <CardHeader className="gap-3">
           <div className="flex items-start justify-between gap-3">
-            {isEditingTitle ? (
-              <form
-                noValidate
-                className="min-w-0 flex-1"
-                onSubmit={submitTitle}
-              >
-                <Controller
-                  name="title"
-                  control={titleForm.control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <Input
-                        {...field}
-                        aria-label="Note title"
-                        aria-invalid={fieldState.invalid}
-                        autoFocus
-                        disabled={updateTitleMutation.isPending}
-                        onBlur={() => {
-                          field.onBlur()
-                          if (skipTitleBlurSaveRef.current) {
-                            skipTitleBlurSaveRef.current = false
-                            return
-                          }
-                          void submitTitle()
-                        }}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Escape') {
-                            event.preventDefault()
-                            cancelEditingTitle()
-                          }
-                        }}
-                      />
-                      {fieldState.invalid ? (
-                        <FieldError errors={[fieldState.error]} />
-                      ) : null}
-                    </Field>
-                  )}
-                />
-              </form>
-            ) : (
-              <Link
-                href={noteHref}
-                className="min-w-0 flex-1"
-                onClick={() => triggerRouteProgressStart(noteHref)}
-              >
-                <CardTitle className="line-clamp-2 text-base hover:underline">
-                  {note.title}
-                </CardTitle>
-              </Link>
-            )}
+            <Link
+              href={noteHref}
+              className="min-w-0 flex-1"
+              onClick={() => triggerRouteProgressStart(noteHref)}
+            >
+              <CardTitle className="line-clamp-2 text-base hover:underline">
+                {note.title}
+              </CardTitle>
+            </Link>
             <div className="flex shrink-0 items-center gap-2">
               <Badge variant={statusVariants[note.status]}>
                 {statusLabels[note.status]}
@@ -293,7 +258,7 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-48">
                   <DropdownMenuGroup>
-                    <DropdownMenuItem onClick={startEditingTitle}>
+                    <DropdownMenuItem onClick={openRename}>
                       <PencilIcon />
                       Rename
                     </DropdownMenuItem>
@@ -358,6 +323,65 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
           </p>
         </CardHeader>
       </Card>
+
+      <Dialog
+        open={renameOpen}
+        onOpenChange={(open) => {
+          setRenameOpen(open)
+          if (!open) {
+            titleForm.reset({ title: note.title })
+          }
+        }}
+      >
+        <DialogContent>
+          <form noValidate onSubmit={submitTitle}>
+            <DialogHeader>
+              <DialogTitle>Rename note</DialogTitle>
+              <DialogDescription>
+                Update the title shown on this note card.
+              </DialogDescription>
+            </DialogHeader>
+
+            <FieldGroup className="py-2">
+              <Controller
+                name="title"
+                control={titleForm.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor={`rename-note-${note.id}`}>
+                      Title
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id={`rename-note-${note.id}`}
+                      aria-invalid={fieldState.invalid}
+                      autoFocus
+                      disabled={updateTitleMutation.isPending}
+                    />
+                    {fieldState.invalid ? (
+                      <FieldError errors={[fieldState.error]} />
+                    ) : null}
+                  </Field>
+                )}
+              />
+            </FieldGroup>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={updateTitleMutation.isPending}
+                onClick={() => setRenameOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" loading={updateTitleMutation.isPending}>
+                Save
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
