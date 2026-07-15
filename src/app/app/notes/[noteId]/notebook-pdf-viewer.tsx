@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useRef, useState, useSyncExternalStore } from 'react'
 import { MaximizeIcon, MinusIcon, PlusIcon, PrinterIcon } from 'lucide-react'
 
 import {
@@ -28,6 +28,31 @@ export type NotebookPdfViewerProps = {
 const minZoom = 0.5
 const maxZoom = 2
 const zoomStep = 0.1
+/** Mobile + tablet (below Tailwind `lg`). */
+const compactBreakpoint = 1024
+const compactDefaultZoom = 0.5
+
+function subscribeCompactViewport(onStoreChange: () => void) {
+  const mql = window.matchMedia(`(max-width: ${compactBreakpoint - 1}px)`)
+  mql.addEventListener('change', onStoreChange)
+  return () => mql.removeEventListener('change', onStoreChange)
+}
+
+function getCompactViewportSnapshot() {
+  return window.innerWidth < compactBreakpoint
+}
+
+function getCompactViewportServerSnapshot() {
+  return false
+}
+
+function useIsCompactViewport() {
+  return useSyncExternalStore(
+    subscribeCompactViewport,
+    getCompactViewportSnapshot,
+    getCompactViewportServerSnapshot,
+  )
+}
 
 export function NotebookPdfViewer({
   title,
@@ -36,10 +61,12 @@ export function NotebookPdfViewer({
   subjectName,
 }: NotebookPdfViewerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const isCompactViewport = useIsCompactViewport()
   const [fitMode, setFitMode] = useState(false)
   const [fitZoom, setFitZoom] = useState(1)
-  const [customZoom, setCustomZoom] = useState(1)
+  const [manualZoom, setManualZoom] = useState<number | null>(null)
 
+  const customZoom = manualZoom ?? (isCompactViewport ? compactDefaultZoom : 1)
   const zoom = fitMode ? fitZoom : customZoom
   const srcDoc = prepareNotebookForView(html, { zoom })
   const zoomLabel = `${Math.round(zoom * 100)}%`
@@ -79,9 +106,9 @@ export function NotebookPdfViewer({
     [measureFitZoom],
   )
 
-  const setManualZoom = (next: number) => {
+  const setZoom = (next: number) => {
     setFitMode(false)
-    setCustomZoom(Math.min(Math.max(next, minZoom), maxZoom))
+    setManualZoom(Math.min(Math.max(next, minZoom), maxZoom))
   }
 
   return (
@@ -122,7 +149,7 @@ export function NotebookPdfViewer({
             size="icon-sm"
             aria-label="Zoom out"
             disabled={zoom <= minZoom}
-            onClick={() => setManualZoom(zoom - zoomStep)}
+            onClick={() => setZoom(zoom - zoomStep)}
           >
             <MinusIcon />
           </Button>
@@ -135,7 +162,7 @@ export function NotebookPdfViewer({
             size="icon-sm"
             aria-label="Zoom in"
             disabled={zoom >= maxZoom}
-            onClick={() => setManualZoom(zoom + zoomStep)}
+            onClick={() => setZoom(zoom + zoomStep)}
           >
             <PlusIcon />
           </Button>
@@ -165,7 +192,7 @@ export function NotebookPdfViewer({
 
       <div
         ref={containerRef}
-        className="bg-muted-foreground min-h-0 flex-1 overflow-auto"
+        className="bg-muted-foreground h-0 min-h-0 flex-1 overflow-auto"
       >
         <iframe
           ref={iframeRef}
