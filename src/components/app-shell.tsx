@@ -2,12 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Suspense } from 'react'
 import { LayoutDashboardIcon, NotebookPenIcon, PlusIcon } from 'lucide-react'
 
 import { AppShellUserMenu } from '@/components/app-shell-user-menu'
 import { RouteTransitionProgress } from '@/components/route-transition-progress'
-import { useRouteTransitionProgress } from '@/hooks/use-route-transition-progress'
+import { Separator } from '@/components/ui/separator'
 import {
   Sidebar,
   SidebarContent,
@@ -48,7 +47,7 @@ const navItems = [
   },
 ] as const
 
-type AppShellProps = {
+export type AppShellProps = {
   children: React.ReactNode
 }
 
@@ -60,23 +59,9 @@ export function AppShell({ children }: AppShellProps) {
     return children
   }
 
-  return <AppShellChrome>{children}</AppShellChrome>
-}
-
-function AppShellRouteSync() {
-  useRouteTransitionProgress()
-  return null
-}
-
-function AppShellChrome({ children }: AppShellProps) {
-  const pathname = usePathname()
-
   return (
     <TooltipProvider>
       <SidebarProvider>
-        <Suspense fallback={null}>
-          <AppShellRouteSync />
-        </Suspense>
         <RouteTransitionProgress />
         <Sidebar collapsible="icon" variant="inset">
           <SidebarHeader>
@@ -97,7 +82,7 @@ function AppShellChrome({ children }: AppShellProps) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
-            <div className="absolute top-4 -right-4 z-50">
+            <div className="absolute top-4 -right-4 z-50 hidden md:block">
               <SidebarTrigger className="size-8 cursor-pointer" />
             </div>
           </SidebarHeader>
@@ -130,13 +115,14 @@ function AppShellChrome({ children }: AppShellProps) {
           <SidebarRail />
         </Sidebar>
         <SidebarInset className="min-h-0">
-          {/* <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger />
+          <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4 md:hidden">
+            <SidebarTrigger className="-ml-1" />
             <Separator
               orientation="vertical"
-              className="mr-2 data-vertical:h-4 data-vertical:self-auto"
+              className="mr-1 data-vertical:h-4 data-vertical:self-auto"
             />
-          </header> */}
+            <span className="truncate text-sm font-medium">Notes App</span>
+          </header>
           <div className="flex min-h-0 flex-1 flex-col overflow-auto">
             {children}
           </div>

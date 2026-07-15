@@ -125,10 +125,8 @@ export function useRouteTransitionProgress() {
   }, [currentSearch, handleAnchorClick, pathname])
 
   useEffect(() => {
-    if (transition.active) {
-      completeTransition()
-    }
-  }, [pathname, currentSearch, transition.active])
+    completeTransition()
+  }, [pathname, currentSearch])
 
   return transition
 }
