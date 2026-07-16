@@ -9,14 +9,16 @@ export type YoutubeTranscriptResult = {
 
 export { extractYoutubeVideoId, isYoutubeUrl }
 
-const INNERTUBE_API_URL =
-  'https://www.youtube.com/youtubei/v1/player?prettyPrint=false'
+const INNERTUBE_API_URL = 'https://www.youtube.com/youtubei/v1/player'
 const INNERTUBE_CLIENT_VERSION = '20.10.38'
-const INNERTUBE_USER_AGENT = `com.google.android.youtube/${INNERTUBE_CLIENT_VERSION} (Linux; U; Android 14)`
+const INNERTUBE_USER_AGENT = `com.google.android.youtube/${INNERTUBE_CLIENT_VERSION} (Linux; U; Android 14) gzip`
 const WEB_USER_AGENT =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
 
 const PREFERRED_LANGS = ['en', 'en-US', 'en-GB'] as const
+
+const BOT_CHECK_HINT =
+  'YouTube blocked caption download from this server (bot check). Try again later, use a different network, or upload a transcript file instead.'
 
 type CaptionTrack = {
   baseUrl?: string
@@ -39,8 +41,27 @@ type Json3Event = {
   segs?: Array<{ utf8?: string }>
 }
 
+type WatchPageContext = {
+  apiKey?: string
+  playerResponse?: PlayerResponse
+}
+
 function badRequest(message: string): never {
   throw new TRPCError({ code: 'BAD_REQUEST', message })
+}
+
+function isBotBlockedReason(reason?: string) {
+  if (!reason) {
+    return false
+  }
+
+  const normalized = reason.toLowerCase()
+  return (
+    normalized.includes('not a bot') ||
+    normalized.includes('sign in') ||
+    normalized.includes('confirm you’re') ||
+    normalized.includes("confirm you're")
+  )
 }
 
 function decodeEntities(text: string) {
@@ -70,14 +91,38 @@ function isYoutubeCaptionHost(hostname: string) {
 function pickCaptionTrack(tracks: CaptionTrack[]) {
   for (const lang of PREFERRED_LANGS) {
     const preferred = tracks.find(
-      (track) => track.languageCode === lang && track.baseUrl,
+      (track) =>
+        track.languageCode === lang && track.baseUrl && track.kind !== 'asr',
     )
     if (preferred) {
       return preferred
     }
+
+    const auto = tracks.find(
+      (track) => track.languageCode === lang && track.baseUrl,
+    )
+    if (auto) {
+      return auto
+    }
+  }
+
+  for (const lang of PREFERRED_LANGS) {
+    const prefix = tracks.find(
+      (track) =>
+        track.languageCode?.startsWith(lang.split('-')[0]!) && track.baseUrl,
+    )
+    if (prefix) {
+      return prefix
+    }
   }
 
   return tracks.find((track) => track.baseUrl) ?? null
+}
+
+function captionTracksFromPlayer(data: PlayerResponse | undefined) {
+  return (
+    data?.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? []
+  ).filter((track) => Boolean(track.baseUrl))
 }
 
 function parseJson3Transcript(body: string) {
@@ -133,6 +178,100 @@ function parseXmlTranscript(body: string) {
   return segments.join(' ').trim()
 }
 
+function extractJsonObjectAfterMarker(html: string, marker: string) {
+  const markerIndex = html.indexOf(marker)
+  if (markerIndex === -1) {
+    return null
+  }
+
+  const start = html.indexOf('{', markerIndex + marker.length)
+  if (start === -1) {
+    return null
+  }
+
+  let depth = 0
+  let inString = false
+  let escaped = false
+
+  for (let i = start; i < html.length; i += 1) {
+    const char = html[i]!
+
+    if (inString) {
+      if (escaped) {
+        escaped = false
+      } else if (char === '\\') {
+        escaped = true
+      } else if (char === '"') {
+        inString = false
+      }
+      continue
+    }
+
+    if (char === '"') {
+      inString = true
+      continue
+    }
+
+    if (char === '{') {
+      depth += 1
+      continue
+    }
+
+    if (char === '}') {
+      depth -= 1
+      if (depth === 0) {
+        return html.slice(start, i + 1)
+      }
+    }
+  }
+
+  return null
+}
+
+async function fetchWatchPageContext(
+  videoId: string,
+): Promise<WatchPageContext> {
+  const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+    headers: {
+      'User-Agent': WEB_USER_AGENT,
+      'Accept-Language': 'en-US,en;q=0.9',
+    },
+  })
+
+  if (!response.ok) {
+    return {}
+  }
+
+  const html = await response.text()
+
+  if (
+    html.includes('Sign in to confirm you’re not a bot') ||
+    html.includes("Sign in to confirm you're not a bot")
+  ) {
+    badRequest(BOT_CHECK_HINT)
+  }
+
+  const apiKeyMatch = html.match(/"INNERTUBE_API_KEY":"([^"]+)"/)
+  const playerJson = extractJsonObjectAfterMarker(
+    html,
+    'ytInitialPlayerResponse',
+  )
+
+  let playerResponse: PlayerResponse | undefined
+  if (playerJson) {
+    try {
+      playerResponse = JSON.parse(playerJson) as PlayerResponse
+    } catch {
+      playerResponse = undefined
+    }
+  }
+
+  return {
+    apiKey: apiKeyMatch?.[1],
+    playerResponse,
+  }
+}
+
 async function fetchCaptionTrackText(baseUrl: string) {
   let captionUrl: URL
   try {
@@ -149,7 +288,8 @@ async function fetchCaptionTrackText(baseUrl: string) {
     )
   }
 
-  // json3 is more reliable than the default XML format across clients.
+  // ANDROID timedtext URLs often include fmt=srv3; replace so json3 wins.
+  captionUrl.searchParams.delete('fmt')
   captionUrl.searchParams.set('fmt', 'json3')
 
   const response = await fetch(captionUrl.toString(), {
@@ -157,7 +297,6 @@ async function fetchCaptionTrackText(baseUrl: string) {
   })
 
   if (!response.ok) {
-    // Fall back to the track's default format.
     const fallback = await fetch(baseUrl, {
       headers: { 'User-Agent': WEB_USER_AGENT },
     })
@@ -171,21 +310,38 @@ async function fetchCaptionTrackText(baseUrl: string) {
   }
 
   const body = await response.text()
+  if (!body.trim()) {
+    badRequest(BOT_CHECK_HINT)
+  }
+
   return parseJson3Transcript(body) || parseXmlTranscript(body)
 }
 
-async function fetchCaptionTracks(videoId: string): Promise<CaptionTrack[]> {
-  const response = await fetch(INNERTUBE_API_URL, {
+async function fetchCaptionTracksFromInnertube(
+  videoId: string,
+  apiKey?: string,
+): Promise<CaptionTrack[]> {
+  const url = new URL(INNERTUBE_API_URL)
+  url.searchParams.set('prettyPrint', 'false')
+  if (apiKey) {
+    url.searchParams.set('key', apiKey)
+  }
+
+  const response = await fetch(url.toString(), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'User-Agent': INNERTUBE_USER_AGENT,
+      'X-YouTube-Client-Name': '3',
+      'X-YouTube-Client-Version': INNERTUBE_CLIENT_VERSION,
     },
     body: JSON.stringify({
       context: {
         client: {
           clientName: 'ANDROID',
           clientVersion: INNERTUBE_CLIENT_VERSION,
+          hl: 'en',
+          gl: 'US',
         },
       },
       videoId,
@@ -193,26 +349,58 @@ async function fetchCaptionTracks(videoId: string): Promise<CaptionTrack[]> {
   })
 
   if (!response.ok) {
-    badRequest(
-      'Unable to fetch captions for this video. Try uploading a transcript file instead.',
-    )
+    return []
   }
 
   const data = (await response.json()) as PlayerResponse
   const status = data.playabilityStatus?.status
+  const reason = data.playabilityStatus?.reason
 
   if (status && status !== 'OK') {
-    const reason = data.playabilityStatus?.reason
+    if (isBotBlockedReason(reason)) {
+      badRequest(BOT_CHECK_HINT)
+    }
+
+    // Fall through to watch-page captions when the player rejects playback
+    // but caption tracks may still be embedded in the watch HTML.
+    return []
+  }
+
+  return captionTracksFromPlayer(data)
+}
+
+async function fetchCaptionTracks(videoId: string): Promise<CaptionTrack[]> {
+  const watch = await fetchWatchPageContext(videoId)
+
+  const fromInnertube = await fetchCaptionTracksFromInnertube(
+    videoId,
+    watch.apiKey,
+  )
+  if (fromInnertube.length > 0) {
+    return fromInnertube
+  }
+
+  const fromWatchPage = captionTracksFromPlayer(watch.playerResponse)
+  if (fromWatchPage.length > 0) {
+    return fromWatchPage
+  }
+
+  const reason = watch.playerResponse?.playabilityStatus?.reason
+  if (isBotBlockedReason(reason)) {
+    badRequest(BOT_CHECK_HINT)
+  }
+
+  if (
+    watch.playerResponse?.playabilityStatus?.status &&
+    watch.playerResponse.playabilityStatus.status !== 'OK'
+  ) {
     badRequest(
       reason?.trim() ||
         'This YouTube video is unavailable. Try another link or upload a transcript file.',
     )
   }
 
-  const tracks =
-    data.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? []
-
-  return tracks.filter((track) => Boolean(track.baseUrl))
+  return []
 }
 
 function mapFetchError(error: unknown): never {
