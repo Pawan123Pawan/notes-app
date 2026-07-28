@@ -2,9 +2,13 @@ const A4_NOTEBOOK_CSS = `
 html, body {
   margin: 0;
   padding: 0;
+  width: 100%;
+  min-height: 100%;
+  height: auto;
   background: #e8eaf0;
 }
 body {
+  min-height: 100vh;
   font-family: 'Noto Sans Devanagari', 'Noto Sans', sans-serif;
   font-size: 20px;
   line-height: 1.75;
@@ -180,9 +184,13 @@ const NOTEBOOK_PDF_VIEW_CSS = `
 @media screen {
   html, body {
     margin: 0;
+    width: 100%;
+    min-height: 100%;
+    height: auto;
     background: #525659;
   }
   body {
+    min-height: 100vh;
     padding: 20px 0 40px;
     zoom: var(--notebook-zoom, 1);
   }
