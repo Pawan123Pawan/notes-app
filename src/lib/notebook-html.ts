@@ -2,17 +2,6 @@ const A4_NOTEBOOK_CSS = `
 html, body {
   margin: 0;
   padding: 0;
-  width: 100%;
-  min-height: 100%;
-  height: auto;
-  background: #e8eaf0;
-}
-body {
-  min-height: 100vh;
-  font-family: 'Noto Sans Devanagari', 'Noto Sans', sans-serif;
-  font-size: 20px;
-  line-height: 1.75;
-  color: #1a1a2e;
 }
 .notebook-page {
   width: 210mm;
@@ -179,7 +168,7 @@ body {
 }
 `.trim()
 
-/** PDF-reader chrome for on-screen viewing (print stays true A4). */
+/** PDF-reader chrome for A4 notebook pages (gray canvas + page shadows). */
 const NOTEBOOK_PDF_VIEW_CSS = `
 @media screen {
   html, body {
@@ -204,8 +193,36 @@ const NOTEBOOK_PDF_VIEW_CSS = `
 }
 `.trim()
 
+/** Viewer chrome for imported/custom HTML — zoom only, preserve author styles. */
+const CUSTOM_HTML_VIEW_CSS = `
+@media screen {
+  html, body {
+    margin: 0;
+    width: 100%;
+    min-height: 100%;
+    height: auto;
+  }
+  body {
+    min-height: 100vh;
+    zoom: var(--notebook-zoom, 1);
+  }
+}
+`.trim()
+
 /** CSS pixel width of one A4 page at 96dpi. */
 export const NOTEBOOK_A4_WIDTH_PX = (210 * 96) / 25.4
+
+/** True when HTML uses the app's A4 notebook page layout. */
+export function htmlUsesNotebookPages(html: string) {
+  return /\bnotebook-page\b/.test(html)
+}
+
+function stripInjectedNotebookStyles(html: string) {
+  return html
+    .replace(/<style id=["']a4-notebook-styles["']>[\s\S]*?<\/style>\s*/gi, '')
+    .replace(/<style id=["']notebook-pdf-view["']>[\s\S]*?<\/style>\s*/gi, '')
+    .replace(/<style id=["']notebook-zoom-var["']>[\s\S]*?<\/style>\s*/gi, '')
+}
 
 function injectHeadStyle(html: string, id: string, css: string) {
   const styleTag = `<style id="${id}">\n${css}\n</style>`
@@ -244,7 +261,7 @@ ${html}
  */
 export function ensureA4NotebookHtml(html: string) {
   const trimmed = html.trim()
-  if (!trimmed) {
+  if (!trimmed || !htmlUsesNotebookPages(trimmed)) {
     return trimmed
   }
 
@@ -265,15 +282,18 @@ export function prepareNotebookForView(
   options: PrepareNotebookForViewOptions = {},
 ) {
   const zoom = options.zoom ?? 1
-  const withA4 = ensureA4NotebookHtml(html)
-  if (!withA4) {
-    return withA4
+  const cleaned = stripInjectedNotebookStyles(html.trim())
+  if (!cleaned) {
+    return cleaned
   }
+
+  const usesNotebookPages = htmlUsesNotebookPages(cleaned)
+  const withA4 = usesNotebookPages ? ensureA4NotebookHtml(cleaned) : cleaned
 
   const withPdfChrome = injectHeadStyle(
     withA4,
     'notebook-pdf-view',
-    NOTEBOOK_PDF_VIEW_CSS,
+    usesNotebookPages ? NOTEBOOK_PDF_VIEW_CSS : CUSTOM_HTML_VIEW_CSS,
   )
 
   const zoomStyle = `<style id="notebook-zoom-var">:root{--notebook-zoom:${zoom};}</style>`
