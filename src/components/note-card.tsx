@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CopyIcon,
   FolderOpenIcon,
@@ -10,7 +10,7 @@ import {
   PencilIcon,
   Trash2Icon,
 } from 'lucide-react'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import {
@@ -39,12 +39,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -54,6 +49,13 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   noteSourceTypeLabels,
   type NoteStatus,
@@ -86,7 +88,6 @@ export type NoteCardFolder = {
 export type NoteCardProps = {
   note: NoteCardNote
   subjects: NoteCardSubject[]
-  folders?: NoteCardFolder[]
 }
 
 const statusLabels: Record<NoteStatus, string> = {
@@ -106,20 +107,76 @@ const statusVariants: Record<
   failed: 'destructive',
 }
 
-export function NoteCard({ note, subjects, folders = [] }: NoteCardProps) {
+type MoveNoteFormValues = {
+  subjectId: string
+  folderId: string
+}
+
+function folderDepth(
+  folders: NoteCardFolder[],
+  folderId: string,
+  cache = new Map<string, number>(),
+): number {
+  const cached = cache.get(folderId)
+  if (cached !== undefined) {
+    return cached
+  }
+
+  const folder = folders.find((item) => item.id === folderId)
+  if (!folder?.parentId) {
+    cache.set(folderId, 0)
+    return 0
+  }
+
+  const depth = folderDepth(folders, folder.parentId, cache) + 1
+  cache.set(folderId, depth)
+  return depth
+}
+
+function folderOptionLabel(folders: NoteCardFolder[], folder: NoteCardFolder) {
+  const depth = folderDepth(folders, folder.id)
+  const indent = depth > 0 ? `${'—'.repeat(depth)} ` : ''
+  return `${indent}${folder.name}`
+}
+
+export function NoteCard({ note, subjects }: NoteCardProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [renameOpen, setRenameOpen] = useState(false)
+  const [moveOpen, setMoveOpen] = useState(false)
 
   const noteHref = `/app/notes/${note.id}`
-  const showMoveToFolder = Boolean(note.subjectId) && folders.length > 0
 
   const titleForm = useForm<{ title: string }>({
     values: { title: note.title },
   })
 
-  const invalidateNoteQueries = async () => {
+  const moveForm = useForm<MoveNoteFormValues>({
+    values: {
+      subjectId: note.subjectId ?? 'none',
+      folderId: note.folderId ?? 'root',
+    },
+  })
+
+  const moveSubjectId = useWatch({
+    control: moveForm.control,
+    name: 'subjectId',
+  })
+
+  const moveFoldersQuery = useQuery({
+    ...trpc.folders.listTree.queryOptions({
+      subjectId:
+        moveSubjectId === 'none'
+          ? (note.subjectId ?? subjects[0]?.id ?? 'placeholder')
+          : moveSubjectId,
+    }),
+    enabled: moveOpen && moveSubjectId !== 'none',
+  })
+
+  const moveFolders = moveFoldersQuery.data ?? []
+
+  const invalidateNoteQueries = async (nextSubjectId?: string | null) => {
     const tasks = [
       queryClient.invalidateQueries({
         queryKey: trpc.notes.list.queryKey(),
@@ -129,17 +186,21 @@ export function NoteCard({ note, subjects, folders = [] }: NoteCardProps) {
       }),
     ]
 
+    const subjectIds = new Set<string>()
     if (note.subjectId) {
+      subjectIds.add(note.subjectId)
+    }
+    if (nextSubjectId) {
+      subjectIds.add(nextSubjectId)
+    }
+
+    for (const subjectId of subjectIds) {
       tasks.push(
         queryClient.invalidateQueries({
-          queryKey: trpc.subjects.getById.queryKey({
-            subjectId: note.subjectId,
-          }),
+          queryKey: trpc.subjects.getById.queryKey({ subjectId }),
         }),
         queryClient.invalidateQueries({
-          queryKey: trpc.folders.listTree.queryKey({
-            subjectId: note.subjectId,
-          }),
+          queryKey: trpc.folders.listTree.queryKey({ subjectId }),
         }),
       )
     }
@@ -164,33 +225,18 @@ export function NoteCard({ note, subjects, folders = [] }: NoteCardProps) {
     }),
   )
 
-  const updateSubjectMutation = useMutation(
+  const moveMutation = useMutation(
     trpc.notes.updateSubject.mutationOptions({
-      onSuccess: async () => {
-        await invalidateNoteQueries()
-        toast.success('Subject updated')
+      onSuccess: async (_data, variables) => {
+        await invalidateNoteQueries(variables.subjectId)
+        setMoveOpen(false)
+        toast.success('Note moved')
       },
       onError: (error) => {
         showErrorToast(
           'Could not move note',
           error,
-          'Unable to update the subject.',
-        )
-      },
-    }),
-  )
-
-  const updateFolderMutation = useMutation(
-    trpc.notes.updateFolder.mutationOptions({
-      onSuccess: async () => {
-        await invalidateNoteQueries()
-        toast.success('Folder updated')
-      },
-      onError: (error) => {
-        showErrorToast(
-          'Could not move note',
-          error,
-          'Unable to update the folder.',
+          'Unable to update the note location.',
         )
       },
     }),
@@ -233,6 +279,14 @@ export function NoteCard({ note, subjects, folders = [] }: NoteCardProps) {
     setRenameOpen(true)
   }
 
+  const openMove = () => {
+    moveForm.reset({
+      subjectId: note.subjectId ?? 'none',
+      folderId: note.folderId ?? 'root',
+    })
+    setMoveOpen(true)
+  }
+
   const submitTitle = titleForm.handleSubmit((values) => {
     const input = updateNoteTitleInput.safeParse({
       noteId: note.id,
@@ -254,6 +308,28 @@ export function NoteCard({ note, subjects, folders = [] }: NoteCardProps) {
     }
 
     updateTitleMutation.mutate(input.data)
+  })
+
+  const submitMove = moveForm.handleSubmit((values) => {
+    const nextSubjectId = values.subjectId === 'none' ? null : values.subjectId
+    const nextFolderId =
+      nextSubjectId === null || values.folderId === 'root'
+        ? null
+        : values.folderId
+
+    const sameSubject = (note.subjectId ?? null) === nextSubjectId
+    const sameFolder = (note.folderId ?? null) === nextFolderId
+
+    if (sameSubject && sameFolder) {
+      setMoveOpen(false)
+      return
+    }
+
+    moveMutation.mutate({
+      noteId: note.id,
+      subjectId: nextSubjectId,
+      folderId: nextFolderId,
+    })
   })
 
   return (
@@ -300,75 +376,10 @@ export function NoteCard({ note, subjects, folders = [] }: NoteCardProps) {
                       </DropdownMenuItem>
                     ) : null}
 
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger>
-                        <FolderOpenIcon />
-                        Move to subject
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="min-w-44">
-                        <DropdownMenuRadioGroup
-                          value={note.subjectId ?? 'none'}
-                          onValueChange={(value) => {
-                            updateSubjectMutation.mutate({
-                              noteId: note.id,
-                              subjectId: value === 'none' ? null : value,
-                            })
-                          }}
-                        >
-                          <DropdownMenuRadioItem
-                            value="none"
-                            disabled={updateSubjectMutation.isPending}
-                          >
-                            No subject
-                          </DropdownMenuRadioItem>
-                          {subjects.map((subject) => (
-                            <DropdownMenuRadioItem
-                              key={subject.id}
-                              value={subject.id}
-                              disabled={updateSubjectMutation.isPending}
-                            >
-                              {subject.name}
-                            </DropdownMenuRadioItem>
-                          ))}
-                        </DropdownMenuRadioGroup>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuSub>
-
-                    {showMoveToFolder ? (
-                      <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                          <FolderOpenIcon />
-                          Move to folder
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent className="min-w-44">
-                          <DropdownMenuRadioGroup
-                            value={note.folderId ?? 'root'}
-                            onValueChange={(value) => {
-                              updateFolderMutation.mutate({
-                                noteId: note.id,
-                                folderId: value === 'root' ? null : value,
-                              })
-                            }}
-                          >
-                            <DropdownMenuRadioItem
-                              value="root"
-                              disabled={updateFolderMutation.isPending}
-                            >
-                              Subject root
-                            </DropdownMenuRadioItem>
-                            {folders.map((folder) => (
-                              <DropdownMenuRadioItem
-                                key={folder.id}
-                                value={folder.id}
-                                disabled={updateFolderMutation.isPending}
-                              >
-                                {folder.name}
-                              </DropdownMenuRadioItem>
-                            ))}
-                          </DropdownMenuRadioGroup>
-                        </DropdownMenuSubContent>
-                      </DropdownMenuSub>
-                    ) : null}
+                    <DropdownMenuItem onClick={openMove}>
+                      <FolderOpenIcon />
+                      Move…
+                    </DropdownMenuItem>
                   </DropdownMenuGroup>
 
                   <DropdownMenuSeparator />
@@ -443,6 +454,117 @@ export function NoteCard({ note, subjects, folders = [] }: NoteCardProps) {
               </Button>
               <Button type="submit" loading={updateTitleMutation.isPending}>
                 Save
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={moveOpen}
+        onOpenChange={(open) => {
+          setMoveOpen(open)
+          if (!open) {
+            moveForm.reset({
+              subjectId: note.subjectId ?? 'none',
+              folderId: note.folderId ?? 'root',
+            })
+          }
+        }}
+      >
+        <DialogContent>
+          <form noValidate onSubmit={submitMove}>
+            <DialogHeader>
+              <DialogTitle>Move note</DialogTitle>
+              <DialogDescription>
+                Choose any subject and folder for this note.
+              </DialogDescription>
+            </DialogHeader>
+
+            <FieldGroup className="py-2">
+              <Controller
+                name="subjectId"
+                control={moveForm.control}
+                render={({ field }) => (
+                  <Field>
+                    <FieldLabel htmlFor={`move-note-subject-${note.id}`}>
+                      Subject
+                    </FieldLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value)
+                        moveForm.setValue('folderId', 'root')
+                      }}
+                      disabled={moveMutation.isPending}
+                    >
+                      <SelectTrigger
+                        id={`move-note-subject-${note.id}`}
+                        className="w-full"
+                      >
+                        <SelectValue placeholder="Choose a subject" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No subject</SelectItem>
+                        {subjects.map((subject) => (
+                          <SelectItem key={subject.id} value={subject.id}>
+                            {subject.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                )}
+              />
+
+              {moveSubjectId !== 'none' ? (
+                <Controller
+                  name="folderId"
+                  control={moveForm.control}
+                  render={({ field }) => (
+                    <Field>
+                      <FieldLabel htmlFor={`move-note-folder-${note.id}`}>
+                        Folder
+                      </FieldLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={
+                          moveMutation.isPending || moveFoldersQuery.isLoading
+                        }
+                      >
+                        <SelectTrigger
+                          id={`move-note-folder-${note.id}`}
+                          className="w-full"
+                        >
+                          <SelectValue placeholder="Choose a folder" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="root">Subject root</SelectItem>
+                          {moveFolders.map((folder) => (
+                            <SelectItem key={folder.id} value={folder.id}>
+                              {folderOptionLabel(moveFolders, folder)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  )}
+                />
+              ) : null}
+            </FieldGroup>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={moveMutation.isPending}
+                onClick={() => setMoveOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" loading={moveMutation.isPending}>
+                Move
               </Button>
             </DialogFooter>
           </form>

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
@@ -10,6 +11,10 @@ import {
   PlusIcon,
 } from 'lucide-react'
 
+import {
+  DashboardFolderCards,
+  type FolderCreateState,
+} from '@/app/app/components/dashboard-folder-cards'
 import {
   NotesGridSkeleton,
   SubjectsGridSkeleton,
@@ -105,7 +110,7 @@ function DashboardSubjects() {
   if (subjects.length === 0 && unassignedCount === 0) {
     return (
       <Card>
-        <CardContent className="flex flex-col items-start gap-4 py-8">
+        <CardContent className="flex flex-col gap-4 py-8">
           <FolderOpenIcon className="text-muted-foreground size-8" />
           <p className="text-muted-foreground text-sm">
             No subjects or notes yet. Create a subject or add your first note.
@@ -136,7 +141,8 @@ function DashboardSubjects() {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-muted-foreground text-sm">
-        Choose a subject to browse its notes. Drag a card to reorder subjects.
+        Choose a subject to browse its folders and notes. Drag a card to reorder
+        subjects.
       </p>
       <SortableSubjectCards
         subjects={subjects}
@@ -151,21 +157,33 @@ function DashboardSubjects() {
   )
 }
 
-function DashboardSubjectNotes({ subjectId }: { subjectId: string }) {
-  const trpc = useTRPC()
-  const isUnassigned = subjectId === unassignedSubjectId
-  const listSubjectId = isUnassigned ? null : subjectId
+function folderBreadcrumbPath(
+  folders: Array<{ id: string; parentId: string | null; name: string }>,
+  folderId: string | null,
+) {
+  if (!folderId) {
+    return []
+  }
 
-  const subjectQuery = useQuery({
-    ...trpc.subjects.getById.queryOptions({ subjectId }),
-    enabled: !isUnassigned,
-  })
+  const byId = new Map(folders.map((folder) => [folder.id, folder]))
+  const path: Array<{ id: string; name: string }> = []
+  let current = byId.get(folderId)
+
+  while (current) {
+    path.unshift({ id: current.id, name: current.name })
+    current = current.parentId ? byId.get(current.parentId) : undefined
+  }
+
+  return path
+}
+
+function DashboardUnassignedNotes() {
+  const trpc = useTRPC()
 
   const subjectsQuery = useQuery(trpc.subjects.list.queryOptions())
-
   const notesQuery = useQuery(
     trpc.notes.list.queryOptions({
-      subjectId: listSubjectId,
+      subjectId: null,
       limit: 50,
     }),
   )
@@ -173,35 +191,12 @@ function DashboardSubjectNotes({ subjectId }: { subjectId: string }) {
   const notes = notesQuery.data?.items ?? []
   const subjects = subjectsQuery.data ?? []
 
-  const subjectName = isUnassigned
-    ? 'Unassigned'
-    : (subjectQuery.data?.name ?? 'Subject')
-
-  const newNoteHref = isUnassigned
-    ? '/app/new'
-    : `/app/new?subjectId=${subjectId}`
-
-  if ((!isUnassigned && subjectQuery.isLoading) || notesQuery.isLoading) {
+  if (notesQuery.isLoading) {
     return (
       <div className="flex flex-col gap-4">
         <SkeletonBackBar />
         <NotesGridSkeleton count={3} />
       </div>
-    )
-  }
-
-  if (!isUnassigned && (subjectQuery.isError || !subjectQuery.data)) {
-    return (
-      <Card>
-        <CardContent className="flex flex-col items-start gap-4 py-8">
-          <p className="text-sm">This subject could not be loaded.</p>
-          <BaseButton asChild variant="outline">
-            <Link href="/app" onClick={() => triggerRouteProgressStart('/app')}>
-              Back to subjects
-            </Link>
-          </BaseButton>
-        </CardContent>
-      </Card>
     )
   }
 
@@ -216,33 +211,17 @@ function DashboardSubjectNotes({ subjectId }: { subjectId: string }) {
             </Link>
           </BaseButton>
           <div>
-            <h2 className="text-lg font-semibold">{subjectName}</h2>
+            <h2 className="text-lg font-semibold">Unassigned</h2>
             <p className="text-muted-foreground text-sm">
-              {notes.length} {notes.length === 1 ? 'note' : 'notes'} — drag a
-              card to reorder.
-              {!isUnassigned ? (
-                <>
-                  {' '}
-                  Use{' '}
-                  <Link
-                    href={`/app/subjects/${subjectId}`}
-                    className="text-foreground underline underline-offset-2"
-                    onClick={() =>
-                      triggerRouteProgressStart(`/app/subjects/${subjectId}`)
-                    }
-                  >
-                    folders
-                  </Link>{' '}
-                  to organize notes inside this subject.
-                </>
-              ) : null}
+              {notes.length} {notes.length === 1 ? 'note' : 'notes'} without a
+              subject — drag a card to reorder.
             </p>
           </div>
         </div>
         <BaseButton asChild>
           <Link
-            href={newNoteHref}
-            onClick={() => triggerRouteProgressStart(newNoteHref)}
+            href="/app/new"
+            onClick={() => triggerRouteProgressStart('/app/new')}
           >
             New note
           </Link>
@@ -253,12 +232,12 @@ function DashboardSubjectNotes({ subjectId }: { subjectId: string }) {
         <Card>
           <CardContent className="flex flex-col items-start gap-4 py-8">
             <p className="text-muted-foreground text-sm">
-              No notes in this subject yet.
+              No unassigned notes.
             </p>
             <BaseButton asChild>
               <Link
-                href={newNoteHref}
-                onClick={() => triggerRouteProgressStart(newNoteHref)}
+                href="/app/new"
+                onClick={() => triggerRouteProgressStart('/app/new')}
               >
                 Create note
               </Link>
@@ -266,12 +245,251 @@ function DashboardSubjectNotes({ subjectId }: { subjectId: string }) {
           </CardContent>
         </Card>
       ) : (
-        <SortableNoteCards
-          notes={notes}
-          subjects={subjects}
-          subjectId={listSubjectId}
-        />
+        <SortableNoteCards notes={notes} subjects={subjects} subjectId={null} />
       )}
+    </div>
+  )
+}
+
+function DashboardSubjectBrowse({ subjectId }: { subjectId: string }) {
+  const trpc = useTRPC()
+  const searchParams = useSearchParams()
+  const folderIdParam = searchParams.get('folderId')
+
+  const [createState, setCreateState] = useState<FolderCreateState>({
+    open: false,
+    parentId: null,
+  })
+
+  const subjectQuery = useQuery(
+    trpc.subjects.getById.queryOptions({ subjectId }),
+  )
+  const subjectsQuery = useQuery(trpc.subjects.list.queryOptions())
+  const foldersQuery = useQuery(
+    trpc.folders.listTree.queryOptions({ subjectId }),
+  )
+
+  const folders = foldersQuery.data ?? []
+  const selectedFolderId =
+    folderIdParam && folders.some((folder) => folder.id === folderIdParam)
+      ? folderIdParam
+      : null
+
+  const selectedFolder = selectedFolderId
+    ? folders.find((folder) => folder.id === selectedFolderId)
+    : null
+
+  const childFolders = folders.filter(
+    (folder) => folder.parentId === selectedFolderId,
+  )
+
+  const notesQuery = useQuery(
+    trpc.notes.list.queryOptions({
+      subjectId,
+      folderId: selectedFolderId,
+      limit: 50,
+    }),
+  )
+
+  const notes = notesQuery.data?.items ?? []
+  const subjects = subjectsQuery.data ?? []
+  const subjectName = subjectQuery.data?.name ?? 'Subject'
+  const breadcrumbPath = folderBreadcrumbPath(folders, selectedFolderId)
+
+  const backHref = selectedFolder
+    ? selectedFolder.parentId
+      ? `/app?subjectId=${subjectId}&folderId=${selectedFolder.parentId}`
+      : `/app?subjectId=${subjectId}`
+    : '/app'
+
+  const backLabel = selectedFolder
+    ? selectedFolder.parentId
+      ? (folders.find((folder) => folder.id === selectedFolder.parentId)
+          ?.name ?? 'Parent folder')
+      : subjectName
+    : 'All subjects'
+
+  const newNoteHref = selectedFolderId
+    ? `/app/new?subjectId=${subjectId}&folderId=${selectedFolderId}`
+    : `/app/new?subjectId=${subjectId}`
+
+  const heading = selectedFolder?.name ?? subjectName
+  const isLoading =
+    subjectQuery.isLoading || foldersQuery.isLoading || notesQuery.isLoading
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <SkeletonBackBar />
+        <SubjectsGridSkeleton />
+      </div>
+    )
+  }
+
+  if (subjectQuery.isError || !subjectQuery.data) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-start gap-4 py-8">
+          <p className="text-sm">This subject could not be loaded.</p>
+          <BaseButton asChild variant="outline">
+            <Link href="/app" onClick={() => triggerRouteProgressStart('/app')}>
+              Back to subjects
+            </Link>
+          </BaseButton>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const isEmpty = childFolders.length === 0 && notes.length === 0
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-2">
+          <BaseButton asChild variant="ghost" size="sm" className="w-fit px-0">
+            <Link
+              href={backHref}
+              onClick={() => triggerRouteProgressStart(backHref)}
+            >
+              <ArrowLeftIcon />
+              {backLabel}
+            </Link>
+          </BaseButton>
+
+          {breadcrumbPath.length > 0 ? (
+            <nav
+              aria-label="Folder path"
+              className="text-muted-foreground flex flex-wrap items-center gap-1 text-sm"
+            >
+              <Link
+                href={`/app?subjectId=${subjectId}`}
+                className="hover:text-foreground underline-offset-2 hover:underline"
+                onClick={() =>
+                  triggerRouteProgressStart(`/app?subjectId=${subjectId}`)
+                }
+              >
+                {subjectName}
+              </Link>
+              {breadcrumbPath.map((folder) => (
+                <span key={folder.id} className="contents">
+                  <span aria-hidden>/</span>
+                  <Link
+                    href={`/app?subjectId=${subjectId}&folderId=${folder.id}`}
+                    className="hover:text-foreground underline-offset-2 hover:underline"
+                    onClick={() =>
+                      triggerRouteProgressStart(
+                        `/app?subjectId=${subjectId}&folderId=${folder.id}`,
+                      )
+                    }
+                  >
+                    {folder.name}
+                  </Link>
+                </span>
+              ))}
+            </nav>
+          ) : null}
+
+          <div>
+            <h2 className="text-lg font-semibold">{heading}</h2>
+            <p className="text-muted-foreground text-sm">
+              {selectedFolderId
+                ? 'Folders and notes in this topic. Drag a note card to reorder.'
+                : 'Topic folders and notes at the subject root. Drag a note card to reorder.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              setCreateState({ open: true, parentId: selectedFolderId })
+            }
+          >
+            <PlusIcon />
+            New folder
+          </Button>
+          <BaseButton asChild>
+            <Link
+              href={newNoteHref}
+              onClick={() => triggerRouteProgressStart(newNoteHref)}
+            >
+              New note
+            </Link>
+          </BaseButton>
+        </div>
+      </div>
+
+      {isEmpty ? (
+        <Card>
+          <CardContent className="flex flex-col items-start gap-4 py-8">
+            <p className="text-muted-foreground text-sm">
+              {selectedFolderId
+                ? 'No subfolders or notes here yet.'
+                : 'No folders or notes in this subject yet.'}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  setCreateState({ open: true, parentId: selectedFolderId })
+                }
+              >
+                <PlusIcon />
+                New folder
+              </Button>
+              <BaseButton asChild>
+                <Link
+                  href={newNoteHref}
+                  onClick={() => triggerRouteProgressStart(newNoteHref)}
+                >
+                  Create note
+                </Link>
+              </BaseButton>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-col gap-8">
+          {childFolders.length > 0 ? (
+            <section className="flex flex-col gap-3">
+              <h3 className="text-sm font-semibold">Folders</h3>
+              <DashboardFolderCards
+                subjectId={subjectId}
+                folders={childFolders}
+                allFolders={folders}
+                createState={createState}
+                onCreateStateChange={setCreateState}
+              />
+            </section>
+          ) : null}
+
+          {notes.length > 0 ? (
+            <section className="flex flex-col gap-3">
+              <h3 className="text-sm font-semibold">Notes</h3>
+              <SortableNoteCards
+                notes={notes}
+                subjects={subjects}
+                subjectId={subjectId}
+                folderId={selectedFolderId}
+              />
+            </section>
+          ) : null}
+        </div>
+      )}
+
+      {childFolders.length === 0 ? (
+        <DashboardFolderCards
+          subjectId={subjectId}
+          folders={[]}
+          allFolders={folders}
+          createState={createState}
+          onCreateStateChange={setCreateState}
+        />
+      ) : null}
     </div>
   )
 }
@@ -290,9 +508,13 @@ export function DashboardView() {
   const searchParams = useSearchParams()
   const subjectId = searchParams.get('subjectId')
 
-  if (subjectId) {
-    return <DashboardSubjectNotes subjectId={subjectId} />
+  if (!subjectId) {
+    return <DashboardSubjects />
   }
 
-  return <DashboardSubjects />
+  if (subjectId === unassignedSubjectId) {
+    return <DashboardUnassignedNotes />
+  }
+
+  return <DashboardSubjectBrowse subjectId={subjectId} />
 }

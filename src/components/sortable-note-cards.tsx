@@ -21,7 +21,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import {
   NoteCard,
-  type NoteCardFolder,
   type NoteCardNote,
   type NoteCardSubject,
 } from '@/components/note-card'
@@ -34,18 +33,15 @@ export type SortableNoteCardsProps = {
   subjectId: string | null
   /** When set (including `null` for subject root), scopes list/reorder to that folder. */
   folderId?: string | null
-  folders?: NoteCardFolder[]
   listLimit?: number
 }
 
 function SortableNoteCardItem({
   note,
   subjects,
-  folders,
 }: {
   note: NoteCardNote
   subjects: NoteCardSubject[]
-  folders?: NoteCardFolder[]
 }) {
   const {
     attributes,
@@ -70,7 +66,7 @@ function SortableNoteCardItem({
       {...attributes}
       {...listeners}
     >
-      <NoteCard note={note} subjects={subjects} folders={folders} />
+      <NoteCard note={note} subjects={subjects} />
     </div>
   )
 }
@@ -80,7 +76,6 @@ export function SortableNoteCards({
   subjects,
   subjectId,
   folderId,
-  folders,
   listLimit = 50,
 }: SortableNoteCardsProps) {
   const trpc = useTRPC()
@@ -186,7 +181,6 @@ export function SortableNoteCards({
               key={note.id}
               note={note}
               subjects={subjects}
-              folders={folders}
             />
           ))}
         </div>

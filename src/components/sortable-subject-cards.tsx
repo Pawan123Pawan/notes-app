@@ -163,7 +163,7 @@ function SubjectFolderCard({
                         onClick={() => triggerRouteProgressStart(notesHref)}
                       >
                         <FolderOpenIcon />
-                        View notes
+                        Browse folders
                       </Link>
                     </DropdownMenuItem>
                   ) : null}

@@ -248,7 +248,6 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
               subjects={subjects}
               subjectId={subjectId}
               folderId={selectedFolderId}
-              folders={folders}
             />
           )}
         </div>

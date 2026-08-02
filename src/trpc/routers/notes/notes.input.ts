@@ -75,6 +75,8 @@ export type DeleteNoteInput = z.infer<typeof deleteNoteInput>
 export const updateNoteSubjectInput = z.object({
   noteId: z.string().min(1),
   subjectId: z.string().nullable().optional(),
+  /** Target folder within the subject; ignored when subjectId is null. Defaults to subject root. */
+  folderId: z.string().nullable().optional(),
 })
 
 export type UpdateNoteSubjectInput = z.infer<typeof updateNoteSubjectInput>

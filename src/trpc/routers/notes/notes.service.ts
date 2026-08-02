@@ -515,15 +515,27 @@ export async function updateNoteSubject(
     nextSubjectId = subject._id
   }
 
-  const sortOrder = await nextFrontSortOrder(userId, nextSubjectId, null)
+  const nextFolderId = nextSubjectId
+    ? ((await resolveFolderIdForNote(
+        userId,
+        nextSubjectId,
+        input.folderId ?? null,
+      )) ?? null)
+    : null
+
+  const sortOrder = await nextFrontSortOrder(
+    userId,
+    nextSubjectId,
+    nextFolderId,
+  )
 
   await Note.updateOne(
     { _id: note._id, userId },
-    { subjectId: nextSubjectId, folderId: null, sortOrder },
+    { subjectId: nextSubjectId, folderId: nextFolderId, sortOrder },
   )
 
   note.subjectId = nextSubjectId
-  note.folderId = null
+  note.folderId = nextFolderId
   note.sortOrder = sortOrder
 
   return toNoteSummary(note)
