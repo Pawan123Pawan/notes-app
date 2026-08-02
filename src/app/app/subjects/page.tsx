@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 
 import { AddSubjectButton } from '@/app/app/subjects/add-subject-button'
-import { SubjectsListSkeleton } from '@/components/app-skeletons'
+import { SubjectsGridSkeleton } from '@/components/app-skeletons'
 import { PageContainer } from '@/components/ui/page-container'
 import { PageHeader } from '@/components/ui/page-header'
 
@@ -18,10 +18,10 @@ export default function SubjectsPage() {
     <PageContainer>
       <PageHeader
         title="Subjects"
-        description="Expand a subject to browse its notes folders, or open it to manage notes."
+        description="Group notes by course, topic, or exam prep."
         extraAction={<AddSubjectButton />}
       />
-      <Suspense fallback={<SubjectsListSkeleton />}>
+      <Suspense fallback={<SubjectsGridSkeleton />}>
         <SubjectsView />
       </Suspense>
     </PageContainer>

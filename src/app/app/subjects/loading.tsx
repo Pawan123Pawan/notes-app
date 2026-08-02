@@ -1,4 +1,4 @@
-import { SubjectsListSkeleton } from '@/components/app-skeletons'
+import { SubjectsGridSkeleton } from '@/components/app-skeletons'
 import { PageContainer } from '@/components/ui/page-container'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -12,7 +12,7 @@ export default function SubjectsLoading() {
         </div>
         <Skeleton className="h-9 w-32 shrink-0" />
       </div>
-      <SubjectsListSkeleton />
+      <SubjectsGridSkeleton />
     </PageContainer>
   )
 }

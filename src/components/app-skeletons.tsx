@@ -60,40 +60,10 @@ export function SubjectsGridSkeleton({ count = 6 }: { count?: number }) {
   )
 }
 
-export function SubjectsListSkeleton({ count = 4 }: { count?: number }) {
-  return (
-    <div
-      className="flex flex-col gap-3"
-      aria-busy="true"
-      aria-label="Loading subjects"
-    >
-      {Array.from({ length: count }, (_, index) => (
-        <Card key={index}>
-          <CardHeader className="border-b">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex min-w-0 flex-1 items-start gap-3">
-                <Skeleton className="size-8 shrink-0 rounded-lg" />
-                <div className="flex min-w-0 flex-1 flex-col gap-2">
-                  <Skeleton className="h-5 w-40 max-w-full" />
-                  <Skeleton className="h-4 w-24" />
-                </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-1.5">
-                <Skeleton className="h-8 w-16 rounded-md" />
-                <Skeleton className="size-7 rounded-md" />
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
-      ))}
-    </div>
-  )
-}
-
 export function SubjectsViewSkeleton() {
   return (
     <div className="flex flex-col gap-8" aria-busy="true" aria-label="Loading">
-      <SubjectsListSkeleton />
+      <SubjectsGridSkeleton />
     </div>
   )
 }
