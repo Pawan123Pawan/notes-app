@@ -40,12 +40,18 @@ const noteSchema = new Schema(
       type: noteMetadataSchema,
       default: () => ({}),
     },
+    sortOrder: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
   },
   { timestamps: true },
 )
 
 noteSchema.index({ userId: 1, createdAt: -1 })
 noteSchema.index({ userId: 1, subjectId: 1 })
+noteSchema.index({ userId: 1, subjectId: 1, sortOrder: 1 })
 
 export type NoteMetadata = InferSchemaType<typeof noteMetadataSchema>
 

@@ -3,6 +3,7 @@ import {
   createSubjectInput,
   deleteSubjectInput,
   getSubjectByIdInput,
+  reorderSubjectsInput,
   updateSubjectInput,
 } from '@/trpc/routers/subjects/subjects.input'
 import {
@@ -10,6 +11,7 @@ import {
   deleteSubject,
   getSubjectById,
   listSubjects,
+  reorderSubjects,
   updateSubject,
 } from '@/trpc/routers/subjects/subjects.service'
 
@@ -31,4 +33,8 @@ export const subjectsRouter = createTRPCRouter({
   delete: protectedProcedure
     .input(deleteSubjectInput)
     .mutation(({ ctx, input }) => deleteSubject(ctx.user.id, input)),
+
+  reorder: protectedProcedure
+    .input(reorderSubjectsInput)
+    .mutation(({ ctx, input }) => reorderSubjects(ctx.user.id, input)),
 })

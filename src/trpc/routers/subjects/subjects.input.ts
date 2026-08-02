@@ -35,3 +35,9 @@ export const getSubjectByIdInput = z.object({
 })
 
 export type GetSubjectByIdInput = z.infer<typeof getSubjectByIdInput>
+
+export const reorderSubjectsInput = z.object({
+  subjectIds: z.array(z.string().min(1)).min(1).max(100),
+})
+
+export type ReorderSubjectsInput = z.infer<typeof reorderSubjectsInput>

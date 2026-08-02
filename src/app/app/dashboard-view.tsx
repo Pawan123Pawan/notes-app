@@ -1,38 +1,21 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import {
   ArrowLeftIcon,
   FolderOpenIcon,
   MoreHorizontalIcon,
   PlusIcon,
-  Settings2Icon,
-  Trash2Icon,
 } from 'lucide-react'
-import { toast } from 'sonner'
 
 import {
   NotesGridSkeleton,
   SubjectsGridSkeleton,
 } from '@/components/app-skeletons'
-import {
-  NoteCard,
-  type NoteCardNote,
-  type NoteCardSubject,
-} from '@/components/note-card'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+import { SortableNoteCards } from '@/components/sortable-note-cards'
+import { SortableSubjectCards } from '@/components/sortable-subject-cards'
 import { BaseButton, Button } from '@/components/ui/button'
 import {
   Card,
@@ -44,175 +27,78 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { triggerRouteProgressStart } from '@/lib/route-progress'
-import { showErrorToast } from '@/lib/utils'
 import { useTRPC } from '@/trpc/react'
 
 const unassignedSubjectId = 'none'
 
-function NoteCards({
-  notes,
-  subjects,
-}: {
-  notes: NoteCardNote[]
-  subjects: NoteCardSubject[]
-}) {
+function UnassignedSubjectCard({ noteCount }: { noteCount: number }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {notes.map((note) => (
-        <NoteCard key={note.id} note={note} subjects={subjects} />
-      ))}
-    </div>
-  )
-}
+    <Card className="hover:bg-muted/40 h-full transition-colors">
+      <CardHeader className="gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <Link
+            href={`/app?subjectId=${unassignedSubjectId}`}
+            className="min-w-0 flex-1"
+            onClick={() =>
+              triggerRouteProgressStart(`/app?subjectId=${unassignedSubjectId}`)
+            }
+          >
+            <CardTitle className="text-base hover:underline">
+              Unassigned
+            </CardTitle>
+          </Link>
 
-function SubjectCard({
-  subject,
-}: {
-  subject: { id: string; name: string; noteCount: number }
-}) {
-  const trpc = useTRPC()
-  const queryClient = useQueryClient()
-  const [deleteOpen, setDeleteOpen] = useState(false)
-
-  const notesHref = `/app?subjectId=${subject.id}`
-  const manageHref = `/app/subjects/${subject.id}`
-  const newNoteHref = `/app/new?subjectId=${subject.id}`
-
-  const deleteMutation = useMutation(
-    trpc.subjects.delete.mutationOptions({
-      onSuccess: async () => {
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: trpc.subjects.list.queryKey(),
-          }),
-          queryClient.invalidateQueries({
-            queryKey: trpc.notes.list.queryKey(),
-          }),
-        ])
-        toast.success('Subject deleted')
-      },
-      onError: (error) => {
-        showErrorToast(
-          'Could not delete subject',
-          error,
-          'Unable to delete this subject.',
-        )
-      },
-    }),
-  )
-
-  return (
-    <>
-      <Card className="hover:bg-muted/40 h-full transition-colors">
-        <CardHeader className="gap-3">
-          <div className="flex items-start justify-between gap-3">
-            <Link
-              href={notesHref}
-              className="min-w-0 flex-1"
-              onClick={() => triggerRouteProgressStart(notesHref)}
-            >
-              <CardTitle className="text-base hover:underline">
-                {subject.name}
-              </CardTitle>
-            </Link>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-sm"
-                  aria-label="Subject actions"
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-sm"
+                aria-label="Unassigned notes actions"
+              >
+                <MoreHorizontalIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-48">
+              <DropdownMenuItem asChild>
+                <Link
+                  href="/app/new"
+                  onClick={() => triggerRouteProgressStart('/app/new')}
                 >
-                  <MoreHorizontalIcon />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-48">
-                <DropdownMenuGroup>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href={newNoteHref}
-                      onClick={() => triggerRouteProgressStart(newNoteHref)}
-                    >
-                      <PlusIcon />
-                      New note
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href={manageHref}
-                      onClick={() => triggerRouteProgressStart(manageHref)}
-                    >
-                      <Settings2Icon />
-                      Manage subject
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => setDeleteOpen(true)}
-                >
-                  <Trash2Icon />
-                  Delete subject
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          <CardDescription>
-            {subject.noteCount} {subject.noteCount === 1 ? 'note' : 'notes'}
-          </CardDescription>
-        </CardHeader>
-      </Card>
-
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this subject?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Notes in this subject will be kept but removed from the folder.
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={deleteMutation.isPending}
-              onClick={() => deleteMutation.mutate({ subjectId: subject.id })}
-            >
-              {deleteMutation.isPending ? 'Deleting...' : 'Delete subject'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+                  <PlusIcon />
+                  New note
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <CardDescription>
+          {noteCount} {noteCount === 1 ? 'note' : 'notes'} without a subject
+        </CardDescription>
+      </CardHeader>
+    </Card>
   )
 }
 
 function DashboardSubjects() {
   const trpc = useTRPC()
   const subjectsQuery = useQuery(trpc.subjects.list.queryOptions())
-  const notesQuery = useQuery(
+  const unassignedNotesQuery = useQuery(
     trpc.notes.list.queryOptions({
+      subjectId: null,
       limit: 50,
     }),
   )
 
   const subjects = subjectsQuery.data ?? []
-  const unassignedCount =
-    notesQuery.data?.items.filter((note) => !note.subjectId).length ?? 0
+  const unassignedCount = unassignedNotesQuery.data?.items.length ?? 0
 
-  if (subjectsQuery.isLoading || notesQuery.isLoading) {
+  if (subjectsQuery.isLoading || unassignedNotesQuery.isLoading) {
     return <SubjectsGridSkeleton />
   }
 
@@ -250,63 +136,17 @@ function DashboardSubjects() {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-muted-foreground text-sm">
-        Choose a subject to browse its notes.
+        Choose a subject to browse its notes. Drag a card to reorder subjects.
       </p>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {subjects.map((subject) => (
-          <SubjectCard key={subject.id} subject={subject} />
-        ))}
-
-        {unassignedCount > 0 ? (
-          <Card className="hover:bg-muted/40 h-full transition-colors">
-            <CardHeader className="gap-3">
-              <div className="flex items-start justify-between gap-3">
-                <Link
-                  href={`/app?subjectId=${unassignedSubjectId}`}
-                  className="min-w-0 flex-1"
-                  onClick={() =>
-                    triggerRouteProgressStart(
-                      `/app?subjectId=${unassignedSubjectId}`,
-                    )
-                  }
-                >
-                  <CardTitle className="text-base hover:underline">
-                    Unassigned
-                  </CardTitle>
-                </Link>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon-sm"
-                      aria-label="Unassigned notes actions"
-                    >
-                      <MoreHorizontalIcon />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="min-w-48">
-                    <DropdownMenuItem asChild>
-                      <Link
-                        href="/app/new"
-                        onClick={() => triggerRouteProgressStart('/app/new')}
-                      >
-                        <PlusIcon />
-                        New note
-                      </Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <CardDescription>
-                {unassignedCount} {unassignedCount === 1 ? 'note' : 'notes'}{' '}
-                without a subject
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        ) : null}
-      </div>
+      <SortableSubjectCards
+        subjects={subjects}
+        titleHref="notes"
+        unassignedSlot={
+          unassignedCount > 0 ? (
+            <UnassignedSubjectCard noteCount={unassignedCount} />
+          ) : null
+        }
+      />
     </div>
   )
 }
@@ -314,6 +154,7 @@ function DashboardSubjects() {
 function DashboardSubjectNotes({ subjectId }: { subjectId: string }) {
   const trpc = useTRPC()
   const isUnassigned = subjectId === unassignedSubjectId
+  const listSubjectId = isUnassigned ? null : subjectId
 
   const subjectQuery = useQuery({
     ...trpc.subjects.getById.queryOptions({ subjectId }),
@@ -324,15 +165,12 @@ function DashboardSubjectNotes({ subjectId }: { subjectId: string }) {
 
   const notesQuery = useQuery(
     trpc.notes.list.queryOptions({
-      ...(isUnassigned ? {} : { subjectId }),
+      subjectId: listSubjectId,
       limit: 50,
     }),
   )
 
-  const notes = isUnassigned
-    ? (notesQuery.data?.items.filter((note) => !note.subjectId) ?? [])
-    : (notesQuery.data?.items ?? [])
-
+  const notes = notesQuery.data?.items ?? []
   const subjects = subjectsQuery.data ?? []
 
   const subjectName = isUnassigned
@@ -380,8 +218,8 @@ function DashboardSubjectNotes({ subjectId }: { subjectId: string }) {
           <div>
             <h2 className="text-lg font-semibold">{subjectName}</h2>
             <p className="text-muted-foreground text-sm">
-              {notes.length} {notes.length === 1 ? 'note' : 'notes'} — click a
-              note to open it.
+              {notes.length} {notes.length === 1 ? 'note' : 'notes'} — drag a
+              card to reorder.
             </p>
           </div>
         </div>
@@ -412,7 +250,11 @@ function DashboardSubjectNotes({ subjectId }: { subjectId: string }) {
           </CardContent>
         </Card>
       ) : (
-        <NoteCards notes={notes} subjects={subjects} />
+        <SortableNoteCards
+          notes={notes}
+          subjects={subjects}
+          subjectId={listSubjectId}
+        />
       )}
     </div>
   )

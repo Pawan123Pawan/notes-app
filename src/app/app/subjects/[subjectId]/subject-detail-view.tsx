@@ -11,7 +11,7 @@ import {
   NotesGridSkeleton,
   SubjectDetailSkeleton,
 } from '@/components/app-skeletons'
-import { NoteCard } from '@/components/note-card'
+import { SortableNoteCards } from '@/components/sortable-note-cards'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -244,11 +244,11 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {notes.map((note) => (
-              <NoteCard key={note.id} note={note} subjects={subjects} />
-            ))}
-          </div>
+          <SortableNoteCards
+            notes={notes}
+            subjects={subjects}
+            subjectId={subjectId}
+          />
         )}
       </div>
     </div>

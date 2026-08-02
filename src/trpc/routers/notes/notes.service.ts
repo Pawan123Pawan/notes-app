@@ -18,6 +18,7 @@ import type {
   CreateNoteInput,
   GetNoteByIdInput,
   ListNotesInput,
+  ReorderNotesInput,
   UpdateNoteSubjectInput,
   UpdateNoteTitleInput,
 } from '@/trpc/routers/notes/notes.input'
@@ -88,6 +89,72 @@ function parseSubjectId(subjectId?: string) {
   }
 
   return new mongoose.Types.ObjectId(subjectId)
+}
+
+function subjectIdFilter(
+  subjectId: string | null | undefined,
+): Record<string, unknown> {
+  if (subjectId === undefined) {
+    return {}
+  }
+
+  if (subjectId === null) {
+    return { subjectId: null }
+  }
+
+  return { subjectId: parseSubjectId(subjectId) }
+}
+
+async function nextFrontSortOrder(
+  userId: string,
+  subjectId: mongoose.Types.ObjectId | null | undefined,
+): Promise<number> {
+  const filter: Record<string, unknown> = {
+    userId,
+    sortOrder: { $exists: true },
+  }
+
+  if (subjectId === undefined || subjectId === null) {
+    filter.subjectId = null
+  } else {
+    filter.subjectId = subjectId
+  }
+
+  const front = await Note.findOne(filter)
+    .sort({ sortOrder: 1 })
+    .select('sortOrder')
+    .lean()
+
+  if (front && typeof front.sortOrder === 'number') {
+    return front.sortOrder - 1
+  }
+
+  return 0
+}
+
+async function ensureNotesSortOrderBackfilled(
+  userId: string,
+  subjectId: string | null | undefined,
+) {
+  const filter: Record<string, unknown> = {
+    userId,
+    sortOrder: { $exists: false },
+    ...subjectIdFilter(subjectId),
+  }
+
+  const missing = await Note.find(filter)
+    .sort({ createdAt: -1, _id: -1 })
+    .select('_id')
+
+  if (missing.length === 0) {
+    return
+  }
+
+  await Promise.all(
+    missing.map((note, index) =>
+      Note.updateOne({ _id: note._id }, { $set: { sortOrder: index } }),
+    ),
+  )
 }
 
 function scheduleNoteProcessing(noteId: string) {
@@ -162,12 +229,15 @@ export async function createNote(
 ): Promise<CreateNoteResult> {
   await connectDB()
 
+  const subjectObjectId = parseSubjectId(input.subjectId)
+  const sortOrder = await nextFrontSortOrder(userId, subjectObjectId ?? null)
+
   if (input.sourceType === 'youtube') {
     const { videoId, transcript } = await fetchYoutubeTranscript(input.url)
 
     const note = await Note.create({
       userId,
-      subjectId: parseSubjectId(input.subjectId),
+      subjectId: subjectObjectId,
       sourceType: 'youtube',
       sourceUrl: input.url,
       rawTranscript: transcript,
@@ -175,6 +245,7 @@ export async function createNote(
         videoTitle: videoId,
       },
       status: 'pending',
+      sortOrder,
     })
 
     scheduleNoteProcessing(note._id.toString())
@@ -188,13 +259,14 @@ export async function createNote(
   if (input.sourceType === 'html') {
     const note = await Note.create({
       userId,
-      subjectId: parseSubjectId(input.subjectId),
+      subjectId: subjectObjectId,
       sourceType: 'html',
       title: input.title?.trim() || 'Imported notebook',
       rawTranscript: '(Imported HTML notebook)',
       structuredNotes: '',
       notebookHtml: input.notebookHtml,
       status: 'completed',
+      sortOrder,
     })
 
     return {
@@ -205,10 +277,11 @@ export async function createNote(
 
   const note = await Note.create({
     userId,
-    subjectId: parseSubjectId(input.subjectId),
+    subjectId: subjectObjectId,
     sourceType: input.sourceType,
     rawTranscript: input.transcript,
     status: 'pending',
+    sortOrder,
   })
 
   scheduleNoteProcessing(note._id.toString())
@@ -253,11 +326,11 @@ export async function listNotes(
 ): Promise<ListNotesResult> {
   await connectDB()
 
-  const filter: Record<string, unknown> = { userId }
+  await ensureNotesSortOrderBackfilled(userId, input.subjectId)
 
-  const subjectId = parseSubjectId(input.subjectId)
-  if (subjectId) {
-    filter.subjectId = subjectId
+  const filter: Record<string, unknown> = {
+    userId,
+    ...subjectIdFilter(input.subjectId),
   }
 
   if (input.cursor) {
@@ -274,9 +347,17 @@ export async function listNotes(
     })
 
     if (cursorNote) {
+      const cursorSortOrder =
+        typeof cursorNote.sortOrder === 'number' ? cursorNote.sortOrder : 0
+
       filter.$or = [
-        { createdAt: { $lt: cursorNote.createdAt } },
+        { sortOrder: { $gt: cursorSortOrder } },
         {
+          sortOrder: cursorSortOrder,
+          createdAt: { $lt: cursorNote.createdAt },
+        },
+        {
+          sortOrder: cursorSortOrder,
           createdAt: cursorNote.createdAt,
           _id: { $lt: cursorNote._id },
         },
@@ -285,10 +366,10 @@ export async function listNotes(
   }
 
   const notes = await Note.find(filter)
-    .sort({ createdAt: -1, _id: -1 })
+    .sort({ sortOrder: 1, createdAt: -1, _id: -1 })
     .limit(input.limit + 1)
     .select(
-      'title sourceType sourceUrl status subjectId metadata createdAt updatedAt',
+      'title sourceType sourceUrl status subjectId metadata createdAt updatedAt sortOrder',
     )
 
   const hasMore = notes.length > input.limit
@@ -355,6 +436,8 @@ export async function updateNoteSubject(
     })
   }
 
+  let nextSubjectId: mongoose.Types.ObjectId | null = null
+
   if (input.subjectId) {
     if (!mongoose.isValidObjectId(input.subjectId)) {
       throw new TRPCError({
@@ -375,14 +458,70 @@ export async function updateNoteSubject(
       })
     }
 
-    note.subjectId = subject._id
-  } else {
-    note.set('subjectId', null)
+    nextSubjectId = subject._id
   }
 
-  await Note.updateOne({ _id: note._id, userId }, { subjectId: note.subjectId })
+  const sortOrder = await nextFrontSortOrder(userId, nextSubjectId)
+
+  await Note.updateOne(
+    { _id: note._id, userId },
+    { subjectId: nextSubjectId, sortOrder },
+  )
+
+  note.subjectId = nextSubjectId
+  note.sortOrder = sortOrder
 
   return toNoteSummary(note)
+}
+
+export async function reorderNotes(
+  userId: string,
+  input: ReorderNotesInput,
+): Promise<{ ok: true }> {
+  await connectDB()
+
+  await ensureNotesSortOrderBackfilled(userId, input.subjectId)
+
+  const uniqueIds = [...new Set(input.noteIds)]
+
+  if (uniqueIds.length !== input.noteIds.length) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Duplicate note ids in reorder list',
+    })
+  }
+
+  for (const noteId of uniqueIds) {
+    if (!mongoose.isValidObjectId(noteId)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Invalid note id',
+      })
+    }
+  }
+
+  const filter: Record<string, unknown> = {
+    userId,
+    _id: { $in: uniqueIds },
+    ...subjectIdFilter(input.subjectId),
+  }
+
+  const notes = await Note.find(filter).select('_id')
+
+  if (notes.length !== uniqueIds.length) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'One or more notes are missing or not in this subject',
+    })
+  }
+
+  await Promise.all(
+    input.noteIds.map((noteId, index) =>
+      Note.updateOne({ _id: noteId, userId }, { $set: { sortOrder: index } }),
+    ),
+  )
+
+  return { ok: true }
 }
 
 export async function deleteNote(

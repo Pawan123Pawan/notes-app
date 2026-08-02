@@ -42,12 +42,20 @@ export const getNoteByIdInput = z.object({
 export type GetNoteByIdInput = z.infer<typeof getNoteByIdInput>
 
 export const listNotesInput = z.object({
-  subjectId: z.string().optional(),
+  /** Omit for all notes; `null` for unassigned; string for a subject. */
+  subjectId: z.string().nullable().optional(),
   cursor: z.string().optional(),
   limit: z.number().int().min(1).max(50).default(20),
 })
 
 export type ListNotesInput = z.infer<typeof listNotesInput>
+
+export const reorderNotesInput = z.object({
+  subjectId: z.string().nullable(),
+  noteIds: z.array(z.string().min(1)).min(1).max(50),
+})
+
+export type ReorderNotesInput = z.infer<typeof reorderNotesInput>
 
 export const deleteNoteInput = z.object({
   noteId: z.string().min(1),

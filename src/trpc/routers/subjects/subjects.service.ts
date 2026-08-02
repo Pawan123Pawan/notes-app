@@ -9,6 +9,7 @@ import type {
   CreateSubjectInput,
   DeleteSubjectInput,
   GetSubjectByIdInput,
+  ReorderSubjectsInput,
   UpdateSubjectInput,
 } from '@/trpc/routers/subjects/subjects.input'
 
@@ -90,10 +91,50 @@ async function requireSubject(
   return subject
 }
 
+async function nextFrontSubjectSortOrder(userId: string): Promise<number> {
+  const front = await Subject.findOne({
+    userId,
+    sortOrder: { $exists: true },
+  })
+    .sort({ sortOrder: 1 })
+    .select('sortOrder')
+    .lean()
+
+  if (front && typeof front.sortOrder === 'number') {
+    return front.sortOrder - 1
+  }
+
+  return 0
+}
+
+async function ensureSubjectsSortOrderBackfilled(userId: string) {
+  const missing = await Subject.find({
+    userId,
+    sortOrder: { $exists: false },
+  })
+    .sort({ name: 1 })
+    .select('_id')
+
+  if (missing.length === 0) {
+    return
+  }
+
+  await Promise.all(
+    missing.map((subject, index) =>
+      Subject.updateOne({ _id: subject._id }, { $set: { sortOrder: index } }),
+    ),
+  )
+}
+
 export async function listSubjects(userId: string): Promise<SubjectSummary[]> {
   await connectDB()
 
-  const subjects = await Subject.find({ userId }).sort({ name: 1 })
+  await ensureSubjectsSortOrderBackfilled(userId)
+
+  const subjects = await Subject.find({ userId }).sort({
+    sortOrder: 1,
+    name: 1,
+  })
   const noteCounts = await getNoteCountsBySubjectId(
     userId,
     subjects.map((subject) => subject._id),
@@ -122,10 +163,13 @@ export async function createSubject(
 ): Promise<SubjectSummary> {
   await connectDB()
 
+  const sortOrder = await nextFrontSubjectSortOrder(userId)
+
   const subject = await Subject.create({
     userId,
     name: input.name,
     color: input.color,
+    sortOrder,
   })
 
   return toSubjectSummary(subject, 0)
@@ -182,4 +226,63 @@ export async function deleteSubject(
     ),
     Subject.deleteOne({ _id: subject._id, userId }),
   ])
+}
+
+export async function reorderSubjects(
+  userId: string,
+  input: ReorderSubjectsInput,
+): Promise<{ ok: true }> {
+  await connectDB()
+
+  await ensureSubjectsSortOrderBackfilled(userId)
+
+  const uniqueIds = [...new Set(input.subjectIds)]
+
+  if (uniqueIds.length !== input.subjectIds.length) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Duplicate subject ids in reorder list',
+    })
+  }
+
+  for (const subjectId of uniqueIds) {
+    if (!mongoose.isValidObjectId(subjectId)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Invalid subject id',
+      })
+    }
+  }
+
+  const subjects = await Subject.find({
+    userId,
+    _id: { $in: uniqueIds },
+  }).select('_id')
+
+  if (subjects.length !== uniqueIds.length) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'One or more subjects are missing',
+    })
+  }
+
+  const ownedCount = await Subject.countDocuments({ userId })
+
+  if (ownedCount !== uniqueIds.length) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Reorder list must include every subject',
+    })
+  }
+
+  await Promise.all(
+    input.subjectIds.map((subjectId, index) =>
+      Subject.updateOne(
+        { _id: subjectId, userId },
+        { $set: { sortOrder: index } },
+      ),
+    ),
+  )
+
+  return { ok: true }
 }
