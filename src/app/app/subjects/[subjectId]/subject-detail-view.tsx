@@ -24,7 +24,13 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { BaseButton, Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import {
   Field,
   FieldError,
@@ -189,44 +195,54 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-6 lg:grid-cols-[minmax(16rem,18rem)_1fr]">
-        <Card className="h-fit">
-          <CardContent className="pt-6">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(17rem,20rem)_1fr]">
+        <Card className="lg:sticky lg:top-4">
+          <CardHeader className="border-b">
+            <CardTitle>Notes Folders</CardTitle>
+            <CardDescription>
+              Navigate notes folders in {subject.name}. Counts show notes in
+              each folder.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <FolderTree
               subjectId={subjectId}
+              subjectName={subject.name}
               folders={folders}
               selectedFolderId={selectedFolderId}
               rootNoteCount={rootNotesQuery.data?.items.length ?? 0}
+              showHeader={false}
             />
           </CardContent>
         </Card>
 
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold">{notesHeading}</h2>
-              <p className="text-muted-foreground text-sm">
-                {notes.length} {notes.length === 1 ? 'note' : 'notes'}
-                {selectedFolderId
-                  ? null
-                  : ` · ${subject.noteCount} total in subject`}
-              </p>
+        <Card size="sm" className="min-w-0 gap-0 py-0">
+          <CardHeader className="border-b py-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 space-y-1">
+                <CardTitle className="text-lg">{notesHeading}</CardTitle>
+                <CardDescription>
+                  {notes.length} {notes.length === 1 ? 'note' : 'notes'}
+                  {selectedFolderId
+                    ? null
+                    : ` · ${subject.noteCount} total in subject`}
+                </CardDescription>
+              </div>
+              <BaseButton asChild>
+                <Link
+                  href={newNoteHref}
+                  onClick={() => triggerRouteProgressStart(newNoteHref)}
+                >
+                  Create note
+                </Link>
+              </BaseButton>
             </div>
-            <BaseButton asChild>
-              <Link
-                href={newNoteHref}
-                onClick={() => triggerRouteProgressStart(newNoteHref)}
-              >
-                Create note
-              </Link>
-            </BaseButton>
-          </div>
-
-          {notesQuery.isLoading ? (
-            <NotesGridSkeleton count={3} />
-          ) : notes.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-start gap-4 py-8">
+          </CardHeader>
+          <CardContent className="py-4">
+            {notesQuery.isLoading ? (
+              <NotesGridSkeleton count={3} />
+            ) : notes.length === 0 ? (
+              <div className="border-border/70 bg-muted/20 flex flex-col items-start gap-4 rounded-xl border border-dashed px-4 py-8">
                 <p className="text-muted-foreground text-sm">
                   {selectedFolderId
                     ? 'No notes in this folder yet.'
@@ -240,17 +256,17 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
                     Create note
                   </Link>
                 </BaseButton>
-              </CardContent>
-            </Card>
-          ) : (
-            <SortableNoteCards
-              notes={notes}
-              subjects={subjects}
-              subjectId={subjectId}
-              folderId={selectedFolderId}
-            />
-          )}
-        </div>
+              </div>
+            ) : (
+              <SortableNoteCards
+                notes={notes}
+                subjects={subjects}
+                subjectId={subjectId}
+                folderId={selectedFolderId}
+              />
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <Card>

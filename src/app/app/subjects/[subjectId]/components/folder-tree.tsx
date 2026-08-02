@@ -64,9 +64,12 @@ export type FolderTreeItem = {
 
 export type FolderTreeProps = {
   subjectId: string
+  subjectName: string
   folders: FolderTreeItem[]
   selectedFolderId: string | null
   rootNoteCount: number
+  /** When false, parent owns the card header / new-folder control. */
+  showHeader?: boolean
 }
 
 type FolderNameFormValues = {
@@ -133,16 +136,19 @@ function folderHref(subjectId: string, folderId: string | null) {
 
 export function FolderTree({
   subjectId,
+  subjectName,
   folders,
   selectedFolderId,
   rootNoteCount,
+  showHeader = true,
 }: FolderTreeProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const tree = buildTree(folders)
+  const selectedAncestors = ancestorIds(folders, selectedFolderId)
 
   const [expandedIds, setExpandedIds] = useState<Set<string>>(
-    () => new Set(ancestorIds(folders, selectedFolderId)),
+    () => new Set(selectedAncestors),
   )
   const [createOpen, setCreateOpen] = useState(false)
   const [createParentId, setCreateParentId] = useState<string | null>(null)
@@ -156,6 +162,8 @@ export function FolderTree({
   const renameForm = useForm<FolderNameFormValues>({
     values: { name: renameFolder?.name ?? '' },
   })
+
+  const effectiveExpandedIds = new Set([...expandedIds, ...selectedAncestors])
 
   const invalidateFolders = async () => {
     await Promise.all([
@@ -177,13 +185,13 @@ export function FolderTree({
         await invalidateFolders()
         createForm.reset({ name: '' })
         setCreateOpen(false)
-        toast.success('Folder created')
+        toast.success('Notes folder created')
       },
       onError: (error) => {
         showErrorToast(
-          'Could not create folder',
+          'Could not create notes folder',
           error,
-          'Unable to create this folder.',
+          'Unable to create this notes folder.',
         )
       },
     }),
@@ -194,13 +202,13 @@ export function FolderTree({
       onSuccess: async () => {
         await invalidateFolders()
         setRenameFolder(null)
-        toast.success('Folder renamed')
+        toast.success('Notes folder renamed')
       },
       onError: (error) => {
         showErrorToast(
-          'Could not rename folder',
+          'Could not rename notes folder',
           error,
-          'Unable to rename this folder.',
+          'Unable to rename this notes folder.',
         )
       },
     }),
@@ -211,13 +219,13 @@ export function FolderTree({
       onSuccess: async () => {
         await invalidateFolders()
         setDeleteFolder(null)
-        toast.success('Folder deleted')
+        toast.success('Notes folder deleted')
       },
       onError: (error) => {
         showErrorToast(
-          'Could not delete folder',
+          'Could not delete notes folder',
           error,
-          'Unable to delete this folder.',
+          'Unable to delete this notes folder.',
         )
       },
     }),
@@ -281,23 +289,40 @@ export function FolderTree({
 
   const renderNode = (node: TreeNode, depth: number) => {
     const isSelected = selectedFolderId === node.id
-    const isExpanded = expandedIds.has(node.id)
+    const isExpanded = effectiveExpandedIds.has(node.id)
     const hasChildren = node.children.length > 0
     const href = folderHref(subjectId, node.id)
 
     return (
-      <li key={node.id}>
+      <li key={node.id} className="relative">
+        {depth > 0 ? (
+          <span
+            aria-hidden
+            className="bg-border absolute top-0 bottom-0 left-[0.875rem] w-px"
+            style={{ marginLeft: `${(depth - 1) * 14}px` }}
+          />
+        ) : null}
+
         <div
           className={cn(
-            'group flex items-center gap-0.5 rounded-md pr-1',
-            isSelected && 'bg-muted',
+            'group relative flex items-center gap-0.5 rounded-lg pr-1 transition-colors',
+            isSelected ? 'bg-primary/10 text-foreground' : 'hover:bg-muted/70',
           )}
-          style={{ paddingLeft: `${depth * 12}px` }}
+          style={{ paddingLeft: `${depth * 14}px` }}
         >
+          {isSelected ? (
+            <span
+              aria-hidden
+              className="bg-primary absolute top-1 bottom-1 left-0 w-0.5 rounded-full"
+            />
+          ) : null}
+
           <button
             type="button"
-            className="text-muted-foreground hover:text-foreground flex size-7 shrink-0 items-center justify-center rounded-md"
-            aria-label={isExpanded ? 'Collapse folder' : 'Expand folder'}
+            className="text-muted-foreground hover:text-foreground flex size-7 shrink-0 items-center justify-center rounded-md disabled:opacity-40"
+            aria-label={
+              isExpanded ? 'Collapse notes folder' : 'Expand notes folder'
+            }
             disabled={!hasChildren}
             onClick={() => {
               if (hasChildren) {
@@ -318,10 +343,15 @@ export function FolderTree({
 
           <Link
             href={href}
-            className="hover:bg-muted/80 flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 text-sm"
+            className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-2 text-sm"
           >
-            {isSelected ? (
-              <FolderOpenIcon className="text-muted-foreground size-4 shrink-0" />
+            {isSelected || isExpanded ? (
+              <FolderOpenIcon
+                className={cn(
+                  'size-4 shrink-0',
+                  isSelected ? 'text-primary' : 'text-muted-foreground',
+                )}
+              />
             ) : (
               <FolderIcon className="text-muted-foreground size-4 shrink-0" />
             )}
@@ -338,7 +368,7 @@ export function FolderTree({
                 variant="ghost"
                 size="icon-sm"
                 className="opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100"
-                aria-label={`${node.name} folder actions`}
+                aria-label={`${node.name} notes folder actions`}
               >
                 <MoreHorizontalIcon />
               </Button>
@@ -347,7 +377,7 @@ export function FolderTree({
               <DropdownMenuGroup>
                 <DropdownMenuItem onClick={() => openCreate(node.id)}>
                   <PlusIcon />
-                  New subfolder
+                  New notes subfolder
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setRenameFolder(node)}>
                   <PencilIcon />
@@ -360,7 +390,7 @@ export function FolderTree({
                 onClick={() => setDeleteFolder(node)}
               >
                 <Trash2Icon />
-                Delete folder
+                Delete notes folder
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -381,45 +411,100 @@ export function FolderTree({
   return (
     <>
       <div className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold">Folders</h2>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => openCreate(null)}
-          >
-            <PlusIcon />
-            New folder
-          </Button>
-        </div>
+        {showHeader ? (
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold">Notes Folders</h2>
+              <p className="text-muted-foreground truncate text-xs">
+                {subjectName}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => openCreate(null)}
+            >
+              <PlusIcon />
+              New notes folder
+            </Button>
+          </div>
+        ) : (
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => openCreate(null)}
+            >
+              <PlusIcon />
+              New notes folder
+            </Button>
+          </div>
+        )}
 
-        <nav aria-label="Subject folders" className="space-y-0.5">
+        <nav aria-label="Notes folders" className="space-y-0.5">
           <div
             className={cn(
-              'flex items-center gap-0.5 rounded-md pr-1',
-              rootSelected && 'bg-muted',
+              'group relative flex items-center gap-0.5 rounded-lg pr-1 transition-colors',
+              rootSelected
+                ? 'bg-primary/10 text-foreground'
+                : 'hover:bg-muted/70',
             )}
           >
+            {rootSelected ? (
+              <span
+                aria-hidden
+                className="bg-primary absolute top-1 bottom-1 left-0 w-0.5 rounded-full"
+              />
+            ) : null}
             <span className="size-7 shrink-0" />
             <Link
               href={rootHref}
-              className="hover:bg-muted/80 flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 text-sm"
+              className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-2 text-sm"
             >
-              <FolderOpenIcon className="text-muted-foreground size-4 shrink-0" />
-              <span className="truncate font-medium">Subject root</span>
+              <FolderOpenIcon
+                className={cn(
+                  'size-4 shrink-0',
+                  rootSelected ? 'text-primary' : 'text-muted-foreground',
+                )}
+              />
+              <span className="truncate font-medium">{subjectName}</span>
               <span className="text-muted-foreground ml-auto shrink-0 text-xs tabular-nums">
                 {rootNoteCount}
               </span>
             </Link>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="opacity-0 group-hover:opacity-100"
+              aria-label="New notes folder at subject root"
+              onClick={() => openCreate(null)}
+            >
+              <PlusIcon />
+            </Button>
           </div>
 
           {tree.length === 0 ? (
-            <p className="text-muted-foreground px-2 py-3 text-xs">
-              No folders yet. Create one to organize notes inside this subject.
-            </p>
+            <div className="border-border/70 bg-muted/20 mt-2 rounded-lg border border-dashed px-3 py-4">
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                No notes folders yet. Create notes folders to nest notes by
+                topic, chapter, or week.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => openCreate(null)}
+              >
+                <PlusIcon />
+                New notes folder
+              </Button>
+            </div>
           ) : (
-            <ul className="space-y-0.5">
+            <ul className="space-y-0.5 pt-0.5">
               {tree.map((node) => renderNode(node, 0))}
             </ul>
           )}
@@ -439,12 +524,12 @@ export function FolderTree({
           <form noValidate onSubmit={submitCreate}>
             <DialogHeader>
               <DialogTitle>
-                {createParentId ? 'New subfolder' : 'New folder'}
+                {createParentId ? 'New notes subfolder' : 'New notes folder'}
               </DialogTitle>
               <DialogDescription>
                 {createParentId
-                  ? 'Create a folder nested under the selected folder.'
-                  : 'Create a folder at the root of this subject.'}
+                  ? 'Create a notes folder nested under the selected folder.'
+                  : 'Create a notes folder at the root of this subject.'}
               </DialogDescription>
             </DialogHeader>
 
@@ -498,9 +583,9 @@ export function FolderTree({
         <DialogContent>
           <form noValidate onSubmit={submitRename}>
             <DialogHeader>
-              <DialogTitle>Rename folder</DialogTitle>
+              <DialogTitle>Rename notes folder</DialogTitle>
               <DialogDescription>
-                Update the name shown in the folder tree.
+                Update the name shown in the notes folders tree.
               </DialogDescription>
             </DialogHeader>
 
@@ -553,10 +638,10 @@ export function FolderTree({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this folder?</AlertDialogTitle>
+            <AlertDialogTitle>Delete this notes folder?</AlertDialogTitle>
             <AlertDialogDescription>
-              Notes and subfolders inside it move up to the parent folder (or
-              subject root). Notes are not deleted.
+              Notes and notes subfolders inside it move up to the parent folder
+              (or subject root). Notes are not deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -570,7 +655,7 @@ export function FolderTree({
                 }
               }}
             >
-              {deleteMutation.isPending ? 'Deleting...' : 'Delete folder'}
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete notes folder'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

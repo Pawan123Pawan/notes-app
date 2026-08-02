@@ -60,10 +60,40 @@ export function SubjectsGridSkeleton({ count = 6 }: { count?: number }) {
   )
 }
 
+export function SubjectsListSkeleton({ count = 4 }: { count?: number }) {
+  return (
+    <div
+      className="flex flex-col gap-3"
+      aria-busy="true"
+      aria-label="Loading subjects"
+    >
+      {Array.from({ length: count }, (_, index) => (
+        <Card key={index}>
+          <CardHeader className="border-b">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 flex-1 items-start gap-3">
+                <Skeleton className="size-8 shrink-0 rounded-lg" />
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <Skeleton className="h-5 w-40 max-w-full" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <Skeleton className="h-8 w-16 rounded-md" />
+                <Skeleton className="size-7 rounded-md" />
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
 export function SubjectsViewSkeleton() {
   return (
     <div className="flex flex-col gap-8" aria-busy="true" aria-label="Loading">
-      <SubjectsGridSkeleton />
+      <SubjectsListSkeleton />
     </div>
   )
 }
@@ -103,6 +133,39 @@ export function SubjectDetailSkeleton() {
       aria-busy="true"
       aria-label="Loading subject"
     >
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(17rem,20rem)_1fr]">
+        <Card>
+          <CardHeader className="gap-2 border-b">
+            <Skeleton className="h-5 w-28" />
+            <Skeleton className="h-4 w-full max-w-56" />
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-end">
+              <Skeleton className="h-8 w-28" />
+            </div>
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-[92%]" />
+            <Skeleton className="h-9 w-[84%]" />
+            <Skeleton className="h-9 w-[70%]" />
+          </CardContent>
+        </Card>
+
+        <Card size="sm" className="gap-0 py-0">
+          <CardHeader className="border-b py-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-44" />
+                <Skeleton className="h-4 w-28" />
+              </div>
+              <Skeleton className="h-9 w-28 shrink-0" />
+            </div>
+          </CardHeader>
+          <CardContent className="py-4">
+            <NotesGridSkeleton count={3} />
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
           <Skeleton className="h-5 w-36" />
@@ -118,14 +181,6 @@ export function SubjectDetailSkeleton() {
           <Skeleton className="h-9 w-36" />
         </CardContent>
       </Card>
-
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-3">
-          <Skeleton className="h-6 w-44" />
-          <Skeleton className="h-4 w-16" />
-        </div>
-        <NotesGridSkeleton count={3} />
-      </div>
     </div>
   )
 }

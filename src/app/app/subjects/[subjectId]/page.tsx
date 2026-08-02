@@ -20,7 +20,7 @@ import { SubjectDetailView } from './subject-detail-view'
 
 export const metadata: Metadata = {
   title: 'Subject',
-  description: 'View and manage notes and folders in a subject.',
+  description: 'View and manage notes and notes folders in a subject.',
 }
 
 type SubjectPageProps = {
