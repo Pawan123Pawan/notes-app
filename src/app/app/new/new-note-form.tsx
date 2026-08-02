@@ -65,6 +65,7 @@ type NewNoteFormValues = {
   htmlTitle: string
   htmlFileName: string
   subjectId: string
+  folderId: string
 }
 
 type CreateSubjectFormValues = {
@@ -98,7 +99,11 @@ function parseNewNoteTab(value: string | null): NewNoteTab {
   return 'transcript'
 }
 
-function tabHref(tab: NewNoteTab, subjectId: string | null) {
+function tabHref(
+  tab: NewNoteTab,
+  subjectId: string | null,
+  folderId: string | null,
+) {
   const params = new URLSearchParams()
 
   if (tab !== 'transcript') {
@@ -107,6 +112,10 @@ function tabHref(tab: NewNoteTab, subjectId: string | null) {
 
   if (subjectId && subjectId !== 'none') {
     params.set('subjectId', subjectId)
+  }
+
+  if (subjectId && subjectId !== 'none' && folderId && folderId !== 'root') {
+    params.set('folderId', folderId)
   }
 
   const query = params.toString()
@@ -123,6 +132,7 @@ export function NewNoteForm() {
   const [createSubjectOpen, setCreateSubjectOpen] = useState(false)
   const activeTab = parseNewNoteTab(searchParams.get('tab'))
   const initialSubjectId = searchParams.get('subjectId') ?? 'none'
+  const initialFolderId = searchParams.get('folderId') ?? 'root'
 
   const subjectsQuery = useQuery(trpc.subjects.list.queryOptions())
 
@@ -134,6 +144,7 @@ export function NewNoteForm() {
       htmlTitle: '',
       htmlFileName: '',
       subjectId: initialSubjectId,
+      folderId: initialFolderId,
     },
   })
 
@@ -149,6 +160,18 @@ export function NewNoteForm() {
   const selectedSubjectId = useWatch({
     control: form.control,
     name: 'subjectId',
+  })
+
+  const selectedFolderId = useWatch({
+    control: form.control,
+    name: 'folderId',
+  })
+
+  const foldersQuery = useQuery({
+    ...trpc.folders.listTree.queryOptions({
+      subjectId: selectedSubjectId,
+    }),
+    enabled: selectedSubjectId !== 'none',
   })
 
   const createMutation = useMutation(
@@ -182,6 +205,7 @@ export function NewNoteForm() {
           )
         })
         form.setValue('subjectId', subject.id)
+        form.setValue('folderId', 'root')
         createSubjectForm.reset()
         setCreateSubjectOpen(false)
         toast.success('Subject created')
@@ -201,6 +225,8 @@ export function NewNoteForm() {
 
   const submitNote = form.handleSubmit((values) => {
     const subjectId = values.subjectId === 'none' ? undefined : values.subjectId
+    const folderId =
+      subjectId && values.folderId !== 'root' ? values.folderId : undefined
 
     const input =
       activeTab === 'transcript'
@@ -208,12 +234,14 @@ export function NewNoteForm() {
             sourceType: 'transcript',
             transcript: values.transcript,
             subjectId,
+            folderId,
           })
         : activeTab === 'youtube'
           ? createNoteInput.safeParse({
               sourceType: 'youtube',
               url: values.url,
               subjectId,
+              folderId,
             })
           : createNoteInput.safeParse({
               sourceType: 'html',
@@ -223,6 +251,7 @@ export function NewNoteForm() {
                 extractHtmlTitle(values.notebookHtml) ||
                 undefined,
               subjectId,
+              folderId,
             })
 
     if (!input.success) {
@@ -315,8 +344,10 @@ export function NewNoteForm() {
   })
 
   const subjects = subjectsQuery.data ?? []
+  const folders = foldersQuery.data ?? []
   const subjectIdForLinks =
     selectedSubjectId === 'none' ? null : selectedSubjectId
+  const folderIdForLinks = selectedFolderId === 'root' ? null : selectedFolderId
 
   return (
     <>
@@ -341,7 +372,10 @@ export function NewNoteForm() {
                     <div className="flex flex-wrap items-center gap-2">
                       <Select
                         value={field.value}
-                        onValueChange={field.onChange}
+                        onValueChange={(value) => {
+                          field.onChange(value)
+                          form.setValue('folderId', 'root')
+                        }}
                       >
                         <SelectTrigger
                           id="new-note-subject"
@@ -368,28 +402,80 @@ export function NewNoteForm() {
                       </Button>
                     </div>
                     <FieldDescription>
-                      Optional folder for organizing this note. Create one if it
-                      does not exist yet.
+                      Optional subject for organizing this note. Create one if
+                      it does not exist yet.
                     </FieldDescription>
                   </Field>
                 )}
               />
+
+              {selectedSubjectId !== 'none' ? (
+                <Controller
+                  name="folderId"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Field>
+                      <FieldLabel htmlFor="new-note-folder">Folder</FieldLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={foldersQuery.isLoading}
+                      >
+                        <SelectTrigger
+                          id="new-note-folder"
+                          className="w-full sm:w-72"
+                        >
+                          <SelectValue placeholder="Choose a folder" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="root">Subject root</SelectItem>
+                          {folders.map((folder) => (
+                            <SelectItem key={folder.id} value={folder.id}>
+                              {folder.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FieldDescription>
+                        Optional folder inside the subject. Leave at subject
+                        root if you are not nesting this note.
+                      </FieldDescription>
+                    </Field>
+                  )}
+                />
+              ) : null}
             </FieldGroup>
 
             <Tabs value={activeTab}>
               <TabsList>
                 <TabsTrigger asChild value="transcript">
-                  <Link href={tabHref('transcript', subjectIdForLinks)}>
+                  <Link
+                    href={tabHref(
+                      'transcript',
+                      subjectIdForLinks,
+                      folderIdForLinks,
+                    )}
+                  >
                     Transcript
                   </Link>
                 </TabsTrigger>
                 <TabsTrigger asChild value="youtube">
-                  <Link href={tabHref('youtube', subjectIdForLinks)}>
+                  <Link
+                    href={tabHref(
+                      'youtube',
+                      subjectIdForLinks,
+                      folderIdForLinks,
+                    )}
+                  >
                     YouTube
                   </Link>
                 </TabsTrigger>
                 <TabsTrigger asChild value="html">
-                  <Link href={tabHref('html', subjectIdForLinks)}>HTML</Link>
+                  <Link
+                    href={tabHref('html', subjectIdForLinks, folderIdForLinks)}
+                  >
+                    HTML
+                  </Link>
                 </TabsTrigger>
               </TabsList>
 

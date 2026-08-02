@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Trash2Icon } from 'lucide-react'
 import { Controller, useForm } from 'react-hook-form'
@@ -37,6 +37,8 @@ import { showErrorToast } from '@/lib/utils'
 import { updateSubjectInput } from '@/trpc/routers/subjects/subjects.input'
 import { useTRPC } from '@/trpc/react'
 
+import { FolderTree } from './components/folder-tree'
+
 export type SubjectDetailViewProps = {
   subjectId: string
 }
@@ -47,8 +49,11 @@ type RenameSubjectFormValues = {
 
 export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const trpc = useTRPC()
   const queryClient = useQueryClient()
+
+  const folderIdParam = searchParams.get('folderId')
 
   const subjectQuery = useQuery(
     trpc.subjects.getById.queryOptions({ subjectId }),
@@ -56,9 +61,28 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
 
   const subjectsQuery = useQuery(trpc.subjects.list.queryOptions())
 
+  const foldersQuery = useQuery(
+    trpc.folders.listTree.queryOptions({ subjectId }),
+  )
+
+  const folders = foldersQuery.data ?? []
+  const selectedFolderId =
+    folderIdParam && folders.some((folder) => folder.id === folderIdParam)
+      ? folderIdParam
+      : null
+
   const notesQuery = useQuery(
     trpc.notes.list.queryOptions({
       subjectId,
+      folderId: selectedFolderId,
+      limit: 50,
+    }),
+  )
+
+  const rootNotesQuery = useQuery(
+    trpc.notes.list.queryOptions({
+      subjectId,
+      folderId: null,
       limit: 50,
     }),
   )
@@ -132,7 +156,7 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
     updateMutation.mutate(input.data)
   })
 
-  if (subjectQuery.isLoading) {
+  if (subjectQuery.isLoading || foldersQuery.isLoading) {
     return <SubjectDetailSkeleton />
   }
 
@@ -152,9 +176,84 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
   const subject = subjectQuery.data
   const notes = notesQuery.data?.items ?? []
   const subjects = subjectsQuery.data ?? []
+  const selectedFolder = selectedFolderId
+    ? folders.find((folder) => folder.id === selectedFolderId)
+    : null
+  const notesHeading = selectedFolder
+    ? `Notes in ${selectedFolder.name}`
+    : 'Notes in subject root'
+
+  const newNoteHref = selectedFolderId
+    ? `/app/new?subjectId=${subjectId}&folderId=${selectedFolderId}`
+    : `/app/new?subjectId=${subjectId}`
 
   return (
     <div className="space-y-8">
+      <div className="grid gap-6 lg:grid-cols-[minmax(16rem,18rem)_1fr]">
+        <Card className="h-fit">
+          <CardContent className="pt-6">
+            <FolderTree
+              subjectId={subjectId}
+              folders={folders}
+              selectedFolderId={selectedFolderId}
+              rootNoteCount={rootNotesQuery.data?.items.length ?? 0}
+            />
+          </CardContent>
+        </Card>
+
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">{notesHeading}</h2>
+              <p className="text-muted-foreground text-sm">
+                {notes.length} {notes.length === 1 ? 'note' : 'notes'}
+                {selectedFolderId
+                  ? null
+                  : ` · ${subject.noteCount} total in subject`}
+              </p>
+            </div>
+            <BaseButton asChild>
+              <Link
+                href={newNoteHref}
+                onClick={() => triggerRouteProgressStart(newNoteHref)}
+              >
+                Create note
+              </Link>
+            </BaseButton>
+          </div>
+
+          {notesQuery.isLoading ? (
+            <NotesGridSkeleton count={3} />
+          ) : notes.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-start gap-4 py-8">
+                <p className="text-muted-foreground text-sm">
+                  {selectedFolderId
+                    ? 'No notes in this folder yet.'
+                    : 'No notes at the subject root. Create a note or open a folder.'}
+                </p>
+                <BaseButton asChild>
+                  <Link
+                    href={newNoteHref}
+                    onClick={() => triggerRouteProgressStart(newNoteHref)}
+                  >
+                    Create note
+                  </Link>
+                </BaseButton>
+              </CardContent>
+            </Card>
+          ) : (
+            <SortableNoteCards
+              notes={notes}
+              subjects={subjects}
+              subjectId={subjectId}
+              folderId={selectedFolderId}
+              folders={folders}
+            />
+          )}
+        </div>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Subject settings</CardTitle>
@@ -197,7 +296,8 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
                 <AlertDialogTitle>Delete this subject?</AlertDialogTitle>
                 <AlertDialogDescription>
                   Notes in this subject will be kept but removed from the
-                  folder. This action cannot be undone.
+                  folder. Nested folders will be deleted. This action cannot be
+                  undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -214,43 +314,6 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
           </AlertDialog>
         </CardContent>
       </Card>
-
-      <div className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">Notes in this subject</h2>
-          <p className="text-muted-foreground text-sm">
-            {subject.noteCount} {subject.noteCount === 1 ? 'note' : 'notes'}
-          </p>
-        </div>
-
-        {notesQuery.isLoading ? (
-          <NotesGridSkeleton count={3} />
-        ) : notes.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-start gap-4 py-8">
-              <p className="text-muted-foreground text-sm">
-                No notes in this subject yet. Create a note and assign it here.
-              </p>
-              <BaseButton asChild>
-                <Link
-                  href={`/app/new?subjectId=${subjectId}`}
-                  onClick={() =>
-                    triggerRouteProgressStart(`/app/new?subjectId=${subjectId}`)
-                  }
-                >
-                  Create note in this subject
-                </Link>
-              </BaseButton>
-            </CardContent>
-          </Card>
-        ) : (
-          <SortableNoteCards
-            notes={notes}
-            subjects={subjects}
-            subjectId={subjectId}
-          />
-        )}
-      </div>
     </div>
   )
 }

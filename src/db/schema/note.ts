@@ -19,6 +19,11 @@ const noteSchema = new Schema(
       ref: 'Subject',
       default: null,
     },
+    folderId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Folder',
+      default: null,
+    },
     title: { type: String, required: true, default: 'Untitled note' },
     sourceType: {
       type: String,
@@ -52,6 +57,7 @@ const noteSchema = new Schema(
 noteSchema.index({ userId: 1, createdAt: -1 })
 noteSchema.index({ userId: 1, subjectId: 1 })
 noteSchema.index({ userId: 1, subjectId: 1, sortOrder: 1 })
+noteSchema.index({ userId: 1, subjectId: 1, folderId: 1, sortOrder: 1 })
 
 export type NoteMetadata = InferSchemaType<typeof noteMetadataSchema>
 

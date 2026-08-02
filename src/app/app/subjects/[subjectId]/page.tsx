@@ -20,15 +20,20 @@ import { SubjectDetailView } from './subject-detail-view'
 
 export const metadata: Metadata = {
   title: 'Subject',
-  description: 'View and manage notes in a subject folder.',
+  description: 'View and manage notes and folders in a subject.',
 }
 
 type SubjectPageProps = {
   params: Promise<{ subjectId: string }>
+  searchParams: Promise<{ folderId?: string }>
 }
 
-export default async function SubjectPage({ params }: SubjectPageProps) {
+export default async function SubjectPage({
+  params,
+  searchParams,
+}: SubjectPageProps) {
   const { subjectId } = await params
+  const { folderId } = await searchParams
   const caller = await createServerCaller()
 
   let subject
@@ -37,6 +42,28 @@ export default async function SubjectPage({ params }: SubjectPageProps) {
   } catch {
     notFound()
   }
+
+  const folders = await caller.folders.listTree({ subjectId })
+  const folderById = new Map(folders.map((folder) => [folder.id, folder]))
+  const selectedFolder =
+    folderId && folderById.has(folderId) ? folderById.get(folderId) : undefined
+
+  const folderPath: { id: string; name: string }[] = []
+  if (selectedFolder) {
+    let current: (typeof folders)[number] | undefined = selectedFolder
+    const chain: { id: string; name: string }[] = []
+
+    while (current) {
+      chain.unshift({ id: current.id, name: current.name })
+      current = current.parentId ? folderById.get(current.parentId) : undefined
+    }
+
+    folderPath.push(...chain)
+  }
+
+  const description = selectedFolder
+    ? `${selectedFolder.noteCount} ${selectedFolder.noteCount === 1 ? 'note' : 'notes'} in this folder.`
+    : `${subject.noteCount} ${subject.noteCount === 1 ? 'note' : 'notes'} in this subject.`
 
   return (
     <PageContainer>
@@ -48,15 +75,46 @@ export default async function SubjectPage({ params }: SubjectPageProps) {
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{subject.name}</BreadcrumbPage>
-          </BreadcrumbItem>
+          {folderPath.length > 0 ? (
+            <>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link href={`/app/subjects/${subjectId}`}>
+                    {subject.name}
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              {folderPath.map((folder, index) => {
+                const isLast = index === folderPath.length - 1
+                const href = `/app/subjects/${subjectId}?folderId=${folder.id}`
+
+                return (
+                  <span key={folder.id} className="contents">
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      {isLast ? (
+                        <BreadcrumbPage>{folder.name}</BreadcrumbPage>
+                      ) : (
+                        <BreadcrumbLink asChild>
+                          <Link href={href}>{folder.name}</Link>
+                        </BreadcrumbLink>
+                      )}
+                    </BreadcrumbItem>
+                  </span>
+                )
+              })}
+            </>
+          ) : (
+            <BreadcrumbItem>
+              <BreadcrumbPage>{subject.name}</BreadcrumbPage>
+            </BreadcrumbItem>
+          )}
         </BreadcrumbList>
       </Breadcrumb>
 
       <PageHeader
-        title={subject.name}
-        description={`${subject.noteCount} ${subject.noteCount === 1 ? 'note' : 'notes'} in this folder.`}
+        title={selectedFolder?.name ?? subject.name}
+        description={description}
       />
 
       <Suspense fallback={<SubjectDetailSkeleton />}>

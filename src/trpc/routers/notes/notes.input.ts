@@ -13,6 +13,7 @@ export const createNoteInput = z.discriminatedUnion('sourceType', [
       .min(1, 'Transcript is required')
       .max(500_000, 'Transcript is too long'),
     subjectId: z.string().optional(),
+    folderId: z.string().nullable().optional(),
   }),
   z.object({
     sourceType: z.literal('youtube'),
@@ -20,6 +21,7 @@ export const createNoteInput = z.discriminatedUnion('sourceType', [
       .url('Enter a valid YouTube URL')
       .refine(isYoutubeUrl, 'Enter a valid YouTube URL'),
     subjectId: z.string().optional(),
+    folderId: z.string().nullable().optional(),
   }),
   z.object({
     sourceType: z.literal('html'),
@@ -30,6 +32,7 @@ export const createNoteInput = z.discriminatedUnion('sourceType', [
       .max(getNotebookHtmlMaxLength(), 'HTML notebook is too long'),
     title: z.string().trim().min(1).max(200).optional(),
     subjectId: z.string().optional(),
+    folderId: z.string().nullable().optional(),
   }),
 ])
 
@@ -44,6 +47,11 @@ export type GetNoteByIdInput = z.infer<typeof getNoteByIdInput>
 export const listNotesInput = z.object({
   /** Omit for all notes; `null` for unassigned; string for a subject. */
   subjectId: z.string().nullable().optional(),
+  /**
+   * When listing a subject: omit to ignore folder filter; `null` for subject
+   * root; string for a folder. Ignored when subjectId is not a string.
+   */
+  folderId: z.string().nullable().optional(),
   cursor: z.string().optional(),
   limit: z.number().int().min(1).max(50).default(20),
 })
@@ -52,6 +60,7 @@ export type ListNotesInput = z.infer<typeof listNotesInput>
 
 export const reorderNotesInput = z.object({
   subjectId: z.string().nullable(),
+  folderId: z.string().nullable().optional(),
   noteIds: z.array(z.string().min(1)).min(1).max(50),
 })
 
@@ -69,6 +78,13 @@ export const updateNoteSubjectInput = z.object({
 })
 
 export type UpdateNoteSubjectInput = z.infer<typeof updateNoteSubjectInput>
+
+export const updateNoteFolderInput = z.object({
+  noteId: z.string().min(1),
+  folderId: z.string().nullable(),
+})
+
+export type UpdateNoteFolderInput = z.infer<typeof updateNoteFolderInput>
 
 export const updateNoteTitleInput = z.object({
   noteId: z.string().min(1),

@@ -4,6 +4,7 @@ import mongoose from 'mongoose'
 import { connectDB } from '@/db'
 import { Note } from '@/db/schema/note'
 import { Subject, type SubjectDocument } from '@/db/schema/subject'
+import { deleteFoldersForSubject } from '@/trpc/routers/folders/folders.service'
 
 import type {
   CreateSubjectInput,
@@ -222,8 +223,9 @@ export async function deleteSubject(
   await Promise.all([
     Note.updateMany(
       { userId, subjectId: subject._id },
-      { $unset: { subjectId: '' } },
+      { $unset: { subjectId: '', folderId: '' } },
     ),
+    deleteFoldersForSubject(userId, subject._id),
     Subject.deleteOne({ _id: subject._id, userId }),
   ])
 }

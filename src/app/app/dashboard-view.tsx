@@ -220,6 +220,22 @@ function DashboardSubjectNotes({ subjectId }: { subjectId: string }) {
             <p className="text-muted-foreground text-sm">
               {notes.length} {notes.length === 1 ? 'note' : 'notes'} — drag a
               card to reorder.
+              {!isUnassigned ? (
+                <>
+                  {' '}
+                  Use{' '}
+                  <Link
+                    href={`/app/subjects/${subjectId}`}
+                    className="text-foreground underline underline-offset-2"
+                    onClick={() =>
+                      triggerRouteProgressStart(`/app/subjects/${subjectId}`)
+                    }
+                  >
+                    folders
+                  </Link>{' '}
+                  to organize notes inside this subject.
+                </>
+              ) : null}
             </p>
           </div>
         </div>

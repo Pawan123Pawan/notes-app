@@ -4,6 +4,7 @@ import mongoose from 'mongoose'
 import { connectDB } from '@/db'
 import { Note, type NoteDocument, type NoteMetadata } from '@/db/schema/note'
 import type { NoteSourceType, NoteStatus } from '@/db/schema/note.constants'
+import { Subject } from '@/db/schema/subject'
 import {
   generateNoteTitle,
   renderNotebookHtml,
@@ -11,14 +12,14 @@ import {
 } from '@/lib/llm'
 import { getErrorMessage } from '@/lib/utils'
 import { fetchYoutubeTranscript } from '@/lib/youtube'
-
-import { Subject } from '@/db/schema/subject'
+import { resolveFolderIdForNote } from '@/trpc/routers/folders/folders.service'
 
 import type {
   CreateNoteInput,
   GetNoteByIdInput,
   ListNotesInput,
   ReorderNotesInput,
+  UpdateNoteFolderInput,
   UpdateNoteSubjectInput,
   UpdateNoteTitleInput,
 } from '@/trpc/routers/notes/notes.input'
@@ -30,6 +31,7 @@ export type NoteSummary = {
   sourceUrl?: string
   status: NoteStatus
   subjectId?: string
+  folderId?: string
   metadata: NoteMetadata
   createdAt: Date
   updatedAt: Date
@@ -60,6 +62,7 @@ function toNoteSummary(note: NoteDocument): NoteSummary {
     sourceUrl: note.sourceUrl ?? undefined,
     status: note.status,
     subjectId: note.subjectId?.toString(),
+    folderId: note.folderId?.toString(),
     metadata: note.metadata ?? {},
     createdAt: note.createdAt,
     updatedAt: note.updatedAt,
@@ -105,9 +108,31 @@ function subjectIdFilter(
   return { subjectId: parseSubjectId(subjectId) }
 }
 
+function folderIdFilter(
+  folderId: string | null | undefined,
+): Record<string, unknown> {
+  if (folderId === undefined) {
+    return {}
+  }
+
+  if (folderId === null) {
+    return { folderId: null }
+  }
+
+  if (!mongoose.isValidObjectId(folderId)) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Invalid folder id',
+    })
+  }
+
+  return { folderId: new mongoose.Types.ObjectId(folderId) }
+}
+
 async function nextFrontSortOrder(
   userId: string,
   subjectId: mongoose.Types.ObjectId | null | undefined,
+  folderId: mongoose.Types.ObjectId | null | undefined = null,
 ): Promise<number> {
   const filter: Record<string, unknown> = {
     userId,
@@ -118,6 +143,12 @@ async function nextFrontSortOrder(
     filter.subjectId = null
   } else {
     filter.subjectId = subjectId
+  }
+
+  if (folderId === undefined || folderId === null) {
+    filter.folderId = null
+  } else {
+    filter.folderId = folderId
   }
 
   const front = await Note.findOne(filter)
@@ -135,11 +166,13 @@ async function nextFrontSortOrder(
 async function ensureNotesSortOrderBackfilled(
   userId: string,
   subjectId: string | null | undefined,
+  folderId?: string | null,
 ) {
   const filter: Record<string, unknown> = {
     userId,
     sortOrder: { $exists: false },
     ...subjectIdFilter(subjectId),
+    ...folderIdFilter(folderId),
   }
 
   const missing = await Note.find(filter)
@@ -230,7 +263,17 @@ export async function createNote(
   await connectDB()
 
   const subjectObjectId = parseSubjectId(input.subjectId)
-  const sortOrder = await nextFrontSortOrder(userId, subjectObjectId ?? null)
+  const folderObjectId =
+    (await resolveFolderIdForNote(
+      userId,
+      subjectObjectId ?? null,
+      input.folderId,
+    )) ?? null
+  const sortOrder = await nextFrontSortOrder(
+    userId,
+    subjectObjectId ?? null,
+    folderObjectId,
+  )
 
   if (input.sourceType === 'youtube') {
     const { videoId, transcript } = await fetchYoutubeTranscript(input.url)
@@ -238,6 +281,7 @@ export async function createNote(
     const note = await Note.create({
       userId,
       subjectId: subjectObjectId,
+      folderId: folderObjectId,
       sourceType: 'youtube',
       sourceUrl: input.url,
       rawTranscript: transcript,
@@ -260,6 +304,7 @@ export async function createNote(
     const note = await Note.create({
       userId,
       subjectId: subjectObjectId,
+      folderId: folderObjectId,
       sourceType: 'html',
       title: input.title?.trim() || 'Imported notebook',
       rawTranscript: '(Imported HTML notebook)',
@@ -278,6 +323,7 @@ export async function createNote(
   const note = await Note.create({
     userId,
     subjectId: subjectObjectId,
+    folderId: folderObjectId,
     sourceType: input.sourceType,
     rawTranscript: input.transcript,
     status: 'pending',
@@ -326,11 +372,19 @@ export async function listNotes(
 ): Promise<ListNotesResult> {
   await connectDB()
 
-  await ensureNotesSortOrderBackfilled(userId, input.subjectId)
+  const applyFolderFilter = typeof input.subjectId === 'string'
+  const folderFilter = applyFolderFilter ? folderIdFilter(input.folderId) : {}
+
+  await ensureNotesSortOrderBackfilled(
+    userId,
+    input.subjectId,
+    applyFolderFilter ? input.folderId : undefined,
+  )
 
   const filter: Record<string, unknown> = {
     userId,
     ...subjectIdFilter(input.subjectId),
+    ...folderFilter,
   }
 
   if (input.cursor) {
@@ -369,7 +423,7 @@ export async function listNotes(
     .sort({ sortOrder: 1, createdAt: -1, _id: -1 })
     .limit(input.limit + 1)
     .select(
-      'title sourceType sourceUrl status subjectId metadata createdAt updatedAt sortOrder',
+      'title sourceType sourceUrl status subjectId folderId metadata createdAt updatedAt sortOrder',
     )
 
   const hasMore = notes.length > input.limit
@@ -461,14 +515,68 @@ export async function updateNoteSubject(
     nextSubjectId = subject._id
   }
 
-  const sortOrder = await nextFrontSortOrder(userId, nextSubjectId)
+  const sortOrder = await nextFrontSortOrder(userId, nextSubjectId, null)
 
   await Note.updateOne(
     { _id: note._id, userId },
-    { subjectId: nextSubjectId, sortOrder },
+    { subjectId: nextSubjectId, folderId: null, sortOrder },
   )
 
   note.subjectId = nextSubjectId
+  note.folderId = null
+  note.sortOrder = sortOrder
+
+  return toNoteSummary(note)
+}
+
+export async function updateNoteFolder(
+  userId: string,
+  input: UpdateNoteFolderInput,
+): Promise<NoteSummary> {
+  if (!mongoose.isValidObjectId(input.noteId)) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Invalid note id',
+    })
+  }
+
+  await connectDB()
+
+  const note = await Note.findOne({
+    _id: input.noteId,
+    userId,
+  })
+
+  if (!note) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: 'Note not found',
+    })
+  }
+
+  if (!note.subjectId) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Assign the note to a subject before moving it into a folder',
+    })
+  }
+
+  const nextFolderId =
+    (await resolveFolderIdForNote(userId, note.subjectId, input.folderId)) ??
+    null
+
+  const sortOrder = await nextFrontSortOrder(
+    userId,
+    note.subjectId,
+    nextFolderId,
+  )
+
+  await Note.updateOne(
+    { _id: note._id, userId },
+    { folderId: nextFolderId, sortOrder },
+  )
+
+  note.folderId = nextFolderId
   note.sortOrder = sortOrder
 
   return toNoteSummary(note)
@@ -480,7 +588,14 @@ export async function reorderNotes(
 ): Promise<{ ok: true }> {
   await connectDB()
 
-  await ensureNotesSortOrderBackfilled(userId, input.subjectId)
+  const applyFolderFilter =
+    typeof input.subjectId === 'string' && input.folderId !== undefined
+
+  await ensureNotesSortOrderBackfilled(
+    userId,
+    input.subjectId,
+    applyFolderFilter ? input.folderId : undefined,
+  )
 
   const uniqueIds = [...new Set(input.noteIds)]
 
@@ -504,6 +619,7 @@ export async function reorderNotes(
     userId,
     _id: { $in: uniqueIds },
     ...subjectIdFilter(input.subjectId),
+    ...(applyFolderFilter ? folderIdFilter(input.folderId) : {}),
   }
 
   const notes = await Note.find(filter).select('_id')
@@ -511,7 +627,7 @@ export async function reorderNotes(
   if (notes.length !== uniqueIds.length) {
     throw new TRPCError({
       code: 'BAD_REQUEST',
-      message: 'One or more notes are missing or not in this subject',
+      message: 'One or more notes are missing or not in this folder',
     })
   }
 

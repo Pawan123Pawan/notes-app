@@ -69,6 +69,7 @@ export type NoteCardNote = {
   status: NoteStatus
   sourceType: keyof typeof noteSourceTypeLabels
   subjectId?: string
+  folderId?: string
 }
 
 export type NoteCardSubject = {
@@ -76,9 +77,16 @@ export type NoteCardSubject = {
   name: string
 }
 
+export type NoteCardFolder = {
+  id: string
+  parentId: string | null
+  name: string
+}
+
 export type NoteCardProps = {
   note: NoteCardNote
   subjects: NoteCardSubject[]
+  folders?: NoteCardFolder[]
 }
 
 const statusLabels: Record<NoteStatus, string> = {
@@ -98,13 +106,14 @@ const statusVariants: Record<
   failed: 'destructive',
 }
 
-export function NoteCard({ note, subjects }: NoteCardProps) {
+export function NoteCard({ note, subjects, folders = [] }: NoteCardProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [renameOpen, setRenameOpen] = useState(false)
 
   const noteHref = `/app/notes/${note.id}`
+  const showMoveToFolder = Boolean(note.subjectId) && folders.length > 0
 
   const titleForm = useForm<{ title: string }>({
     values: { title: note.title },
@@ -124,6 +133,11 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
       tasks.push(
         queryClient.invalidateQueries({
           queryKey: trpc.subjects.getById.queryKey({
+            subjectId: note.subjectId,
+          }),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: trpc.folders.listTree.queryKey({
             subjectId: note.subjectId,
           }),
         }),
@@ -161,6 +175,22 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
           'Could not move note',
           error,
           'Unable to update the subject.',
+        )
+      },
+    }),
+  )
+
+  const updateFolderMutation = useMutation(
+    trpc.notes.updateFolder.mutationOptions({
+      onSuccess: async () => {
+        await invalidateNoteQueries()
+        toast.success('Folder updated')
+      },
+      onError: (error) => {
+        showErrorToast(
+          'Could not move note',
+          error,
+          'Unable to update the folder.',
         )
       },
     }),
@@ -303,6 +333,42 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
                         </DropdownMenuRadioGroup>
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
+
+                    {showMoveToFolder ? (
+                      <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                          <FolderOpenIcon />
+                          Move to folder
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent className="min-w-44">
+                          <DropdownMenuRadioGroup
+                            value={note.folderId ?? 'root'}
+                            onValueChange={(value) => {
+                              updateFolderMutation.mutate({
+                                noteId: note.id,
+                                folderId: value === 'root' ? null : value,
+                              })
+                            }}
+                          >
+                            <DropdownMenuRadioItem
+                              value="root"
+                              disabled={updateFolderMutation.isPending}
+                            >
+                              Subject root
+                            </DropdownMenuRadioItem>
+                            {folders.map((folder) => (
+                              <DropdownMenuRadioItem
+                                key={folder.id}
+                                value={folder.id}
+                                disabled={updateFolderMutation.isPending}
+                              >
+                                {folder.name}
+                              </DropdownMenuRadioItem>
+                            ))}
+                          </DropdownMenuRadioGroup>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
+                    ) : null}
                   </DropdownMenuGroup>
 
                   <DropdownMenuSeparator />

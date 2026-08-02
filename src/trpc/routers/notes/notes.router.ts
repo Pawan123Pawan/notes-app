@@ -5,6 +5,7 @@ import {
   getNoteByIdInput,
   listNotesInput,
   reorderNotesInput,
+  updateNoteFolderInput,
   updateNoteSubjectInput,
   updateNoteTitleInput,
 } from '@/trpc/routers/notes/notes.input'
@@ -14,6 +15,7 @@ import {
   getNoteById,
   listNotes,
   reorderNotes,
+  updateNoteFolder,
   updateNoteSubject,
   updateNoteTitle,
 } from '@/trpc/routers/notes/notes.service'
@@ -38,6 +40,10 @@ export const notesRouter = createTRPCRouter({
   updateSubject: protectedProcedure
     .input(updateNoteSubjectInput)
     .mutation(({ ctx, input }) => updateNoteSubject(ctx.user.id, input)),
+
+  updateFolder: protectedProcedure
+    .input(updateNoteFolderInput)
+    .mutation(({ ctx, input }) => updateNoteFolder(ctx.user.id, input)),
 
   updateTitle: protectedProcedure
     .input(updateNoteTitleInput)
