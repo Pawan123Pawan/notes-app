@@ -17,12 +17,20 @@ import {
   NOTEBOOK_A4_WIDTH_PX,
   prepareNotebookForView,
 } from '@/lib/notebook-html'
+import { triggerRouteProgressStart } from '@/lib/route-progress'
+
+export type NotebookBreadcrumbFolder = {
+  id: string
+  name: string
+}
 
 export type NotebookPdfViewerProps = {
   title: string
   html: string
   subjectId?: string
   subjectName?: string
+  /** Ancestor folders from subject root to the note’s folder (inclusive). */
+  folderPath?: NotebookBreadcrumbFolder[]
 }
 
 const minZoom = 0.5
@@ -59,6 +67,7 @@ export function NotebookPdfViewer({
   html,
   subjectId,
   subjectName,
+  folderPath = [],
 }: NotebookPdfViewerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const isCompactViewport = useIsCompactViewport()
@@ -70,6 +79,7 @@ export function NotebookPdfViewer({
   const zoom = fitMode ? fitZoom : customZoom
   const srcDoc = prepareNotebookForView(html, { zoom })
   const zoomLabel = `${Math.round(zoom * 100)}%`
+  const subjectHref = subjectId ? `/app?subjectId=${subjectId}` : '/app'
 
   const measureFitZoom = useCallback((width: number) => {
     const available = Math.max(width - 48, 200)
@@ -118,7 +128,12 @@ export function NotebookPdfViewer({
           <BreadcrumbList className="flex-wrap sm:flex-nowrap">
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/app">Dashboard</Link>
+                <Link
+                  href="/app"
+                  onClick={() => triggerRouteProgressStart('/app')}
+                >
+                  Dashboard
+                </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             {subjectId && subjectName ? (
@@ -126,11 +141,33 @@ export function NotebookPdfViewer({
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
-                    <Link href={`/app/subjects/${subjectId}`}>
+                    <Link
+                      href={subjectHref}
+                      onClick={() => triggerRouteProgressStart(subjectHref)}
+                    >
                       {subjectName}
                     </Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
+                {folderPath.map((folder) => {
+                  const href = `/app?subjectId=${subjectId}&folderId=${folder.id}`
+
+                  return (
+                    <span key={folder.id} className="contents">
+                      <BreadcrumbSeparator />
+                      <BreadcrumbItem>
+                        <BreadcrumbLink asChild>
+                          <Link
+                            href={href}
+                            onClick={() => triggerRouteProgressStart(href)}
+                          >
+                            {folder.name}
+                          </Link>
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>
+                    </span>
+                  )
+                })}
               </>
             ) : null}
             <BreadcrumbSeparator />

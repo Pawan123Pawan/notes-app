@@ -4,12 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import {
-  ArrowLeftIcon,
-  FolderOpenIcon,
-  MoreHorizontalIcon,
-  PlusIcon,
-} from 'lucide-react'
+import { FolderOpenIcon, MoreHorizontalIcon, PlusIcon } from 'lucide-react'
 
 import {
   DashboardFolderCards,
@@ -21,6 +16,14 @@ import {
 } from '@/components/app-skeletons'
 import { SortableNoteCards } from '@/components/sortable-note-cards'
 import { SortableSubjectCards } from '@/components/sortable-subject-cards'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 import { BaseButton, Button } from '@/components/ui/button'
 import {
   Card,
@@ -202,21 +205,32 @@ function DashboardUnassignedNotes() {
 
   return (
     <div className="flex flex-col gap-6">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link
+                href="/app"
+                onClick={() => triggerRouteProgressStart('/app')}
+              >
+                Dashboard
+              </Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Unassigned</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-col gap-2">
-          <BaseButton asChild variant="ghost" size="sm" className="w-fit px-0">
-            <Link href="/app" onClick={() => triggerRouteProgressStart('/app')}>
-              <ArrowLeftIcon />
-              All subjects
-            </Link>
-          </BaseButton>
-          <div>
-            <h2 className="text-lg font-semibold">Unassigned</h2>
-            <p className="text-muted-foreground text-sm">
-              {notes.length} {notes.length === 1 ? 'note' : 'notes'} without a
-              subject — drag a card to reorder.
-            </p>
-          </div>
+        <div>
+          <h2 className="text-lg font-semibold">Unassigned</h2>
+          <p className="text-muted-foreground text-sm">
+            {notes.length} {notes.length === 1 ? 'note' : 'notes'} without a
+            subject — drag a card to reorder.
+          </p>
         </div>
         <BaseButton asChild>
           <Link
@@ -294,20 +308,8 @@ function DashboardSubjectBrowse({ subjectId }: { subjectId: string }) {
   const notes = notesQuery.data?.items ?? []
   const subjects = subjectsQuery.data ?? []
   const subjectName = subjectQuery.data?.name ?? 'Subject'
-  const breadcrumbPath = folderBreadcrumbPath(folders, selectedFolderId)
-
-  const backHref = selectedFolder
-    ? selectedFolder.parentId
-      ? `/app?subjectId=${subjectId}&folderId=${selectedFolder.parentId}`
-      : `/app?subjectId=${subjectId}`
-    : '/app'
-
-  const backLabel = selectedFolder
-    ? selectedFolder.parentId
-      ? (folders.find((folder) => folder.id === selectedFolder.parentId)
-          ?.name ?? 'Parent folder')
-      : subjectName
-    : 'All subjects'
+  const folderPath = folderBreadcrumbPath(folders, selectedFolderId)
+  const subjectHref = `/app?subjectId=${subjectId}`
 
   const newNoteHref = selectedFolderId
     ? `/app/new?subjectId=${subjectId}&folderId=${selectedFolderId}`
@@ -345,59 +347,72 @@ function DashboardSubjectBrowse({ subjectId }: { subjectId: string }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-col gap-2">
-          <BaseButton asChild variant="ghost" size="sm" className="w-fit px-0">
-            <Link
-              href={backHref}
-              onClick={() => triggerRouteProgressStart(backHref)}
-            >
-              <ArrowLeftIcon />
-              {backLabel}
-            </Link>
-          </BaseButton>
-
-          {breadcrumbPath.length > 0 ? (
-            <nav
-              aria-label="Folder path"
-              className="text-muted-foreground flex flex-wrap items-center gap-1 text-sm"
-            >
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
               <Link
-                href={`/app?subjectId=${subjectId}`}
-                className="hover:text-foreground underline-offset-2 hover:underline"
-                onClick={() =>
-                  triggerRouteProgressStart(`/app?subjectId=${subjectId}`)
-                }
+                href="/app"
+                onClick={() => triggerRouteProgressStart('/app')}
               >
-                {subjectName}
+                Dashboard
               </Link>
-              {breadcrumbPath.map((folder) => (
-                <span key={folder.id} className="contents">
-                  <span aria-hidden>/</span>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          {folderPath.length > 0 ? (
+            <>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
                   <Link
-                    href={`/app?subjectId=${subjectId}&folderId=${folder.id}`}
-                    className="hover:text-foreground underline-offset-2 hover:underline"
-                    onClick={() =>
-                      triggerRouteProgressStart(
-                        `/app?subjectId=${subjectId}&folderId=${folder.id}`,
-                      )
-                    }
+                    href={subjectHref}
+                    onClick={() => triggerRouteProgressStart(subjectHref)}
                   >
-                    {folder.name}
+                    {subjectName}
                   </Link>
-                </span>
-              ))}
-            </nav>
-          ) : null}
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              {folderPath.map((folder, index) => {
+                const isLast = index === folderPath.length - 1
+                const href = `/app?subjectId=${subjectId}&folderId=${folder.id}`
 
-          <div>
-            <h2 className="text-lg font-semibold">{heading}</h2>
-            <p className="text-muted-foreground text-sm">
-              {selectedFolderId
-                ? 'Folders and notes in this topic. Drag a note card to reorder.'
-                : 'Topic folders and notes at the subject root. Drag a note card to reorder.'}
-            </p>
-          </div>
+                return (
+                  <span key={folder.id} className="contents">
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      {isLast ? (
+                        <BreadcrumbPage>{folder.name}</BreadcrumbPage>
+                      ) : (
+                        <BreadcrumbLink asChild>
+                          <Link
+                            href={href}
+                            onClick={() => triggerRouteProgressStart(href)}
+                          >
+                            {folder.name}
+                          </Link>
+                        </BreadcrumbLink>
+                      )}
+                    </BreadcrumbItem>
+                  </span>
+                )
+              })}
+            </>
+          ) : (
+            <BreadcrumbItem>
+              <BreadcrumbPage>{subjectName}</BreadcrumbPage>
+            </BreadcrumbItem>
+          )}
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">{heading}</h2>
+          <p className="text-muted-foreground text-sm">
+            {selectedFolderId
+              ? 'Folders and notes in this topic. Drag a note card to reorder.'
+              : 'Topic folders and notes at the subject root. Drag a note card to reorder.'}
+          </p>
         </div>
 
         <div className="flex flex-wrap gap-2">

@@ -20,6 +20,26 @@ function isProcessingStatus(status: NoteStatus) {
   return status === 'pending' || status === 'processing'
 }
 
+function buildFolderPath(
+  folders: Array<{ id: string; parentId: string | null; name: string }>,
+  folderId: string | undefined,
+) {
+  if (!folderId) {
+    return []
+  }
+
+  const byId = new Map(folders.map((folder) => [folder.id, folder]))
+  const path: Array<{ id: string; name: string }> = []
+  let current = byId.get(folderId)
+
+  while (current) {
+    path.unshift({ id: current.id, name: current.name })
+    current = current.parentId ? byId.get(current.parentId) : undefined
+  }
+
+  return path
+}
+
 export function NoteDetailView({ noteId }: NoteDetailViewProps) {
   const trpc = useTRPC()
 
@@ -39,6 +59,11 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
     enabled: Boolean(subjectId),
   })
 
+  const foldersQuery = useQuery({
+    ...trpc.folders.listTree.queryOptions({ subjectId: subjectId! }),
+    enabled: Boolean(subjectId),
+  })
+
   if (noteQuery.isLoading) {
     return <NoteDetailSkeleton />
   }
@@ -55,6 +80,8 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
       </Card>
     )
   }
+
+  const folderPath = buildFolderPath(foldersQuery.data ?? [], note.folderId)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -81,6 +108,7 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
           html={note.notebookHtml}
           subjectId={note.subjectId}
           subjectName={subjectQuery.data?.name}
+          folderPath={folderPath}
         />
       ) : null}
 
