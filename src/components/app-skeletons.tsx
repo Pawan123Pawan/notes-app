@@ -63,21 +63,6 @@ export function SubjectsGridSkeleton({ count = 6 }: { count?: number }) {
 export function SubjectsViewSkeleton() {
   return (
     <div className="flex flex-col gap-8" aria-busy="true" aria-label="Loading">
-      <Card>
-        <CardHeader className="gap-2">
-          <Skeleton className="h-5 w-28" />
-          <Skeleton className="h-4 w-full max-w-md" />
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <div className="flex flex-1 flex-col gap-2">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-9 w-full" />
-            </div>
-            <Skeleton className="h-9 w-32 shrink-0" />
-          </div>
-        </CardContent>
-      </Card>
       <SubjectsGridSkeleton />
     </div>
   )

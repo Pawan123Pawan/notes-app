@@ -142,21 +142,15 @@ function DashboardSubjects() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-muted-foreground text-sm">
-        Choose a subject to browse its folders and notes. Drag a card to reorder
-        subjects.
-      </p>
-      <SortableSubjectCards
-        subjects={subjects}
-        titleHref="notes"
-        unassignedSlot={
-          unassignedCount > 0 ? (
-            <UnassignedSubjectCard noteCount={unassignedCount} />
-          ) : null
-        }
-      />
-    </div>
+    <SortableSubjectCards
+      subjects={subjects}
+      titleHref="notes"
+      unassignedSlot={
+        unassignedCount > 0 ? (
+          <UnassignedSubjectCard noteCount={unassignedCount} />
+        ) : null
+      }
+    />
   )
 }
 
@@ -225,13 +219,7 @@ function DashboardUnassignedNotes() {
       </Breadcrumb>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">Unassigned</h2>
-          <p className="text-muted-foreground text-sm">
-            {notes.length} {notes.length === 1 ? 'note' : 'notes'} without a
-            subject — drag a card to reorder.
-          </p>
-        </div>
+        <h2 className="text-lg font-semibold">Unassigned</h2>
         <BaseButton asChild>
           <Link
             href="/app/new"
@@ -406,14 +394,7 @@ function DashboardSubjectBrowse({ subjectId }: { subjectId: string }) {
       </Breadcrumb>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">{heading}</h2>
-          <p className="text-muted-foreground text-sm">
-            {selectedFolderId
-              ? 'Folders and notes in this topic. Drag a note card to reorder.'
-              : 'Topic folders and notes at the subject root. Drag a note card to reorder.'}
-          </p>
-        </div>
+        <h2 className="text-lg font-semibold">{heading}</h2>
 
         <div className="flex flex-wrap gap-2">
           <Button
