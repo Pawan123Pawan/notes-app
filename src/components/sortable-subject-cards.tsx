@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import {
   DndContext,
@@ -68,7 +68,6 @@ export type SortableSubjectCardsProps = {
   subjects: SortableSubject[]
   /** Where the subject title links. */
   titleHref: 'notes' | 'manage'
-  unassignedSlot?: ReactNode
 }
 
 function subjectTitleHref(
@@ -259,7 +258,6 @@ function SortableSubjectCardItem({
 export function SortableSubjectCards({
   subjects,
   titleHref,
-  unassignedSlot,
 }: SortableSubjectCardsProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
@@ -354,7 +352,6 @@ export function SortableSubjectCards({
               titleHref={titleHref}
             />
           ))}
-          {unassignedSlot}
         </div>
       </SortableContext>
     </DndContext>

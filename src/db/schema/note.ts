@@ -17,7 +17,7 @@ const noteSchema = new Schema(
     subjectId: {
       type: Schema.Types.ObjectId,
       ref: 'Subject',
-      default: null,
+      required: true,
     },
     folderId: {
       type: Schema.Types.ObjectId,

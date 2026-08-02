@@ -30,7 +30,7 @@ import { useTRPC } from '@/trpc/react'
 export type SortableNoteCardsProps = {
   notes: NoteCardNote[]
   subjects: NoteCardSubject[]
-  subjectId: string | null
+  subjectId: string
   /** When set (including `null` for subject root), scopes list/reorder to that folder. */
   folderId?: string | null
   listLimit?: number
@@ -82,7 +82,7 @@ export function SortableNoteCards({
   const queryClient = useQueryClient()
 
   const listInput =
-    typeof subjectId === 'string' && folderId !== undefined
+    folderId !== undefined
       ? ({ subjectId, folderId, limit: listLimit } as const)
       : ({ subjectId, limit: listLimit } as const)
   const listQueryKey = trpc.notes.list.queryKey(listInput)

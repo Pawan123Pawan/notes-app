@@ -4,6 +4,8 @@ import { noteSourceTypes } from '@/db/schema/note.constants'
 import { getNotebookHtmlMaxLength } from '@/lib/notebook-html-file'
 import { isYoutubeUrl } from '@/lib/youtube-url'
 
+const requiredSubjectId = z.string().min(1, 'Subject is required')
+
 export const createNoteInput = z.discriminatedUnion('sourceType', [
   z.object({
     sourceType: z.literal('transcript'),
@@ -12,7 +14,7 @@ export const createNoteInput = z.discriminatedUnion('sourceType', [
       .trim()
       .min(1, 'Transcript is required')
       .max(500_000, 'Transcript is too long'),
-    subjectId: z.string().optional(),
+    subjectId: requiredSubjectId,
     folderId: z.string().nullable().optional(),
   }),
   z.object({
@@ -20,7 +22,7 @@ export const createNoteInput = z.discriminatedUnion('sourceType', [
     url: z
       .url('Enter a valid YouTube URL')
       .refine(isYoutubeUrl, 'Enter a valid YouTube URL'),
-    subjectId: z.string().optional(),
+    subjectId: requiredSubjectId,
     folderId: z.string().nullable().optional(),
   }),
   z.object({
@@ -31,7 +33,7 @@ export const createNoteInput = z.discriminatedUnion('sourceType', [
       .min(1, 'HTML notebook is required')
       .max(getNotebookHtmlMaxLength(), 'HTML notebook is too long'),
     title: z.string().trim().min(1).max(200).optional(),
-    subjectId: z.string().optional(),
+    subjectId: requiredSubjectId,
     folderId: z.string().nullable().optional(),
   }),
 ])
@@ -45,11 +47,11 @@ export const getNoteByIdInput = z.object({
 export type GetNoteByIdInput = z.infer<typeof getNoteByIdInput>
 
 export const listNotesInput = z.object({
-  /** Omit for all notes; `null` for unassigned; string for a subject. */
-  subjectId: z.string().nullable().optional(),
+  /** Omit for all notes; string for a subject. */
+  subjectId: z.string().min(1).optional(),
   /**
    * When listing a subject: omit to ignore folder filter; `null` for subject
-   * root; string for a folder. Ignored when subjectId is not a string.
+   * root; string for a folder. Ignored when subjectId is omitted.
    */
   folderId: z.string().nullable().optional(),
   cursor: z.string().optional(),
@@ -59,7 +61,7 @@ export const listNotesInput = z.object({
 export type ListNotesInput = z.infer<typeof listNotesInput>
 
 export const reorderNotesInput = z.object({
-  subjectId: z.string().nullable(),
+  subjectId: z.string().min(1),
   folderId: z.string().nullable().optional(),
   noteIds: z.array(z.string().min(1)).min(1).max(50),
 })
@@ -74,8 +76,8 @@ export type DeleteNoteInput = z.infer<typeof deleteNoteInput>
 
 export const updateNoteSubjectInput = z.object({
   noteId: z.string().min(1),
-  subjectId: z.string().nullable().optional(),
-  /** Target folder within the subject; ignored when subjectId is null. Defaults to subject root. */
+  subjectId: requiredSubjectId,
+  /** Target folder within the subject. Defaults to subject root. */
   folderId: z.string().nullable().optional(),
 })
 

@@ -110,11 +110,11 @@ function tabHref(
     params.set('tab', tab)
   }
 
-  if (subjectId && subjectId !== 'none') {
+  if (subjectId) {
     params.set('subjectId', subjectId)
   }
 
-  if (subjectId && subjectId !== 'none' && folderId && folderId !== 'root') {
+  if (subjectId && folderId && folderId !== 'root') {
     params.set('folderId', folderId)
   }
 
@@ -131,7 +131,7 @@ export function NewNoteForm() {
   const htmlFileInputRef = useRef<HTMLInputElement>(null)
   const [createSubjectOpen, setCreateSubjectOpen] = useState(false)
   const activeTab = parseNewNoteTab(searchParams.get('tab'))
-  const initialSubjectId = searchParams.get('subjectId') ?? 'none'
+  const initialSubjectId = searchParams.get('subjectId') ?? ''
   const initialFolderId = searchParams.get('folderId') ?? 'root'
 
   const subjectsQuery = useQuery(trpc.subjects.list.queryOptions())
@@ -171,7 +171,7 @@ export function NewNoteForm() {
     ...trpc.folders.listTree.queryOptions({
       subjectId: selectedSubjectId,
     }),
-    enabled: selectedSubjectId !== 'none',
+    enabled: Boolean(selectedSubjectId),
   })
 
   const createMutation = useMutation(
@@ -224,23 +224,21 @@ export function NewNoteForm() {
   )
 
   const submitNote = form.handleSubmit((values) => {
-    const subjectId = values.subjectId === 'none' ? undefined : values.subjectId
-    const folderId =
-      subjectId && values.folderId !== 'root' ? values.folderId : undefined
+    const folderId = values.folderId !== 'root' ? values.folderId : undefined
 
     const input =
       activeTab === 'transcript'
         ? createNoteInput.safeParse({
             sourceType: 'transcript',
             transcript: values.transcript,
-            subjectId,
+            subjectId: values.subjectId,
             folderId,
           })
         : activeTab === 'youtube'
           ? createNoteInput.safeParse({
               sourceType: 'youtube',
               url: values.url,
-              subjectId,
+              subjectId: values.subjectId,
               folderId,
             })
           : createNoteInput.safeParse({
@@ -250,7 +248,7 @@ export function NewNoteForm() {
                 values.htmlTitle.trim() ||
                 extractHtmlTitle(values.notebookHtml) ||
                 undefined,
-              subjectId,
+              subjectId: values.subjectId,
               folderId,
             })
 
@@ -258,7 +256,11 @@ export function NewNoteForm() {
       for (const issue of input.error.issues) {
         const field = issue.path[0]
 
-        if (field === 'transcript' || field === 'url') {
+        if (
+          field === 'transcript' ||
+          field === 'url' ||
+          field === 'subjectId'
+        ) {
           form.setError(field, { message: issue.message })
         }
 
@@ -345,8 +347,7 @@ export function NewNoteForm() {
 
   const subjects = subjectsQuery.data ?? []
   const folders = foldersQuery.data ?? []
-  const subjectIdForLinks =
-    selectedSubjectId === 'none' ? null : selectedSubjectId
+  const subjectIdForLinks = selectedSubjectId || null
   const folderIdForLinks = selectedFolderId === 'root' ? null : selectedFolderId
 
   return (
@@ -366,25 +367,26 @@ export function NewNoteForm() {
               <Controller
                 name="subjectId"
                 control={form.control}
-                render={({ field }) => (
-                  <Field>
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor="new-note-subject">Subject</FieldLabel>
                     <div className="flex flex-wrap items-center gap-2">
                       <Select
-                        value={field.value}
+                        value={field.value || undefined}
                         onValueChange={(value) => {
                           field.onChange(value)
                           form.setValue('folderId', 'root')
+                          form.clearErrors('subjectId')
                         }}
                       >
                         <SelectTrigger
                           id="new-note-subject"
                           className="w-full sm:w-72"
+                          aria-invalid={fieldState.invalid}
                         >
                           <SelectValue placeholder="Choose a subject" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">No subject</SelectItem>
                           {subjects.map((subject) => (
                             <SelectItem key={subject.id} value={subject.id}>
                               {subject.name}
@@ -402,14 +404,16 @@ export function NewNoteForm() {
                       </Button>
                     </div>
                     <FieldDescription>
-                      Optional subject for organizing this note. Create one if
-                      it does not exist yet.
+                      Required. Create a subject if it does not exist yet.
                     </FieldDescription>
+                    {fieldState.invalid ? (
+                      <FieldError errors={[fieldState.error]} />
+                    ) : null}
                   </Field>
                 )}
               />
 
-              {selectedSubjectId !== 'none' ? (
+              {selectedSubjectId ? (
                 <Controller
                   name="folderId"
                   control={form.control}

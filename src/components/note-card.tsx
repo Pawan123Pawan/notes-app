@@ -154,7 +154,7 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
 
   const moveForm = useForm<MoveNoteFormValues>({
     values: {
-      subjectId: note.subjectId ?? 'none',
+      subjectId: note.subjectId ?? subjects[0]?.id ?? '',
       folderId: note.folderId ?? 'root',
     },
   })
@@ -166,12 +166,9 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
 
   const moveFoldersQuery = useQuery({
     ...trpc.folders.listTree.queryOptions({
-      subjectId:
-        moveSubjectId === 'none'
-          ? (note.subjectId ?? subjects[0]?.id ?? 'placeholder')
-          : moveSubjectId,
+      subjectId: moveSubjectId || subjects[0]?.id || 'placeholder',
     }),
-    enabled: moveOpen && moveSubjectId !== 'none',
+    enabled: moveOpen && Boolean(moveSubjectId),
   })
 
   const moveFolders = moveFoldersQuery.data ?? []
@@ -281,7 +278,7 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
 
   const openMove = () => {
     moveForm.reset({
-      subjectId: note.subjectId ?? 'none',
+      subjectId: note.subjectId ?? subjects[0]?.id ?? '',
       folderId: note.folderId ?? 'root',
     })
     setMoveOpen(true)
@@ -311,11 +308,13 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
   })
 
   const submitMove = moveForm.handleSubmit((values) => {
-    const nextSubjectId = values.subjectId === 'none' ? null : values.subjectId
-    const nextFolderId =
-      nextSubjectId === null || values.folderId === 'root'
-        ? null
-        : values.folderId
+    const nextSubjectId = values.subjectId
+    const nextFolderId = values.folderId === 'root' ? null : values.folderId
+
+    if (!nextSubjectId) {
+      moveForm.setError('subjectId', { message: 'Subject is required' })
+      return
+    }
 
     const sameSubject = (note.subjectId ?? null) === nextSubjectId
     const sameFolder = (note.folderId ?? null) === nextFolderId
@@ -466,7 +465,7 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
           setMoveOpen(open)
           if (!open) {
             moveForm.reset({
-              subjectId: note.subjectId ?? 'none',
+              subjectId: note.subjectId ?? subjects[0]?.id ?? '',
               folderId: note.folderId ?? 'root',
             })
           }
@@ -485,27 +484,28 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
               <Controller
                 name="subjectId"
                 control={moveForm.control}
-                render={({ field }) => (
-                  <Field>
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor={`move-note-subject-${note.id}`}>
                       Subject
                     </FieldLabel>
                     <Select
-                      value={field.value}
+                      value={field.value || undefined}
                       onValueChange={(value) => {
                         field.onChange(value)
                         moveForm.setValue('folderId', 'root')
+                        moveForm.clearErrors('subjectId')
                       }}
                       disabled={moveMutation.isPending}
                     >
                       <SelectTrigger
                         id={`move-note-subject-${note.id}`}
                         className="w-full"
+                        aria-invalid={fieldState.invalid}
                       >
                         <SelectValue placeholder="Choose a subject" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">No subject</SelectItem>
                         {subjects.map((subject) => (
                           <SelectItem key={subject.id} value={subject.id}>
                             {subject.name}
@@ -513,11 +513,14 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
                         ))}
                       </SelectContent>
                     </Select>
+                    {fieldState.invalid ? (
+                      <FieldError errors={[fieldState.error]} />
+                    ) : null}
                   </Field>
                 )}
               />
 
-              {moveSubjectId !== 'none' ? (
+              {moveSubjectId ? (
                 <Controller
                   name="folderId"
                   control={moveForm.control}

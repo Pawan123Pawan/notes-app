@@ -4,16 +4,13 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import { FolderOpenIcon, MoreHorizontalIcon, PlusIcon } from 'lucide-react'
+import { FolderOpenIcon, PlusIcon } from 'lucide-react'
 
 import {
   DashboardFolderCards,
   type FolderCreateState,
 } from '@/app/app/components/dashboard-folder-cards'
-import {
-  NotesGridSkeleton,
-  SubjectsGridSkeleton,
-} from '@/components/app-skeletons'
+import { SubjectsGridSkeleton } from '@/components/app-skeletons'
 import { SortableNoteCards } from '@/components/sortable-note-cards'
 import { SortableSubjectCards } from '@/components/sortable-subject-cards'
 import {
@@ -25,91 +22,21 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { BaseButton, Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { Card, CardContent } from '@/components/ui/card'
 import { PageHeader } from '@/components/ui/page-header'
 import { Skeleton } from '@/components/ui/skeleton'
 import { triggerRouteProgressStart } from '@/lib/route-progress'
 import { useTRPC } from '@/trpc/react'
 
-const unassignedSubjectId = 'none'
-
 export type DashboardViewProps = {
   userName: string
-}
-
-function UnassignedSubjectCard({ noteCount }: { noteCount: number }) {
-  return (
-    <Card className="hover:bg-muted/40 h-full transition-colors">
-      <CardHeader className="gap-3">
-        <div className="flex items-start justify-between gap-3">
-          <Link
-            href={`/app?subjectId=${unassignedSubjectId}`}
-            className="min-w-0 flex-1"
-            onClick={() =>
-              triggerRouteProgressStart(`/app?subjectId=${unassignedSubjectId}`)
-            }
-          >
-            <CardTitle className="text-base hover:underline">
-              Unassigned
-            </CardTitle>
-          </Link>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon-sm"
-                aria-label="Unassigned notes actions"
-              >
-                <MoreHorizontalIcon />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-48">
-              <DropdownMenuItem asChild>
-                <Link
-                  href="/app/new"
-                  onClick={() => triggerRouteProgressStart('/app/new')}
-                >
-                  <PlusIcon />
-                  New note
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <CardDescription>
-          {noteCount} {noteCount === 1 ? 'note' : 'notes'} without a subject
-        </CardDescription>
-      </CardHeader>
-    </Card>
-  )
 }
 
 function DashboardSubjects({ userName }: { userName: string }) {
   const trpc = useTRPC()
   const subjectsQuery = useQuery(trpc.subjects.list.queryOptions())
-  const unassignedNotesQuery = useQuery(
-    trpc.notes.list.queryOptions({
-      subjectId: null,
-      limit: 50,
-    }),
-  )
 
   const subjects = subjectsQuery.data ?? []
-  const unassignedCount = unassignedNotesQuery.data?.items.length ?? 0
 
   const chrome = (
     <div className="flex flex-col gap-4">
@@ -128,7 +55,7 @@ function DashboardSubjects({ userName }: { userName: string }) {
     </div>
   )
 
-  if (subjectsQuery.isLoading || unassignedNotesQuery.isLoading) {
+  if (subjectsQuery.isLoading) {
     return (
       <div className="flex flex-col gap-6">
         {chrome}
@@ -137,7 +64,7 @@ function DashboardSubjects({ userName }: { userName: string }) {
     )
   }
 
-  if (subjects.length === 0 && unassignedCount === 0) {
+  if (subjects.length === 0) {
     return (
       <div className="flex flex-col gap-6">
         {chrome}
@@ -145,23 +72,23 @@ function DashboardSubjects({ userName }: { userName: string }) {
           <CardContent className="flex flex-col gap-4 py-8">
             <FolderOpenIcon className="text-muted-foreground size-8" />
             <p className="text-muted-foreground text-sm">
-              No subjects or notes yet. Create a subject or add your first note.
+              No subjects yet. Create a subject, then add your first note.
             </p>
             <div className="flex flex-wrap gap-2">
               <BaseButton asChild>
-                <Link
-                  href="/app/new"
-                  onClick={() => triggerRouteProgressStart('/app/new')}
-                >
-                  Create note
-                </Link>
-              </BaseButton>
-              <BaseButton asChild variant="outline">
                 <Link
                   href="/app/subjects"
                   onClick={() => triggerRouteProgressStart('/app/subjects')}
                 >
                   Manage subjects
+                </Link>
+              </BaseButton>
+              <BaseButton asChild variant="outline">
+                <Link
+                  href="/app/new"
+                  onClick={() => triggerRouteProgressStart('/app/new')}
+                >
+                  Create note
                 </Link>
               </BaseButton>
             </div>
@@ -174,15 +101,7 @@ function DashboardSubjects({ userName }: { userName: string }) {
   return (
     <div className="flex flex-col gap-6">
       {chrome}
-      <SortableSubjectCards
-        subjects={subjects}
-        titleHref="notes"
-        unassignedSlot={
-          unassignedCount > 0 ? (
-            <UnassignedSubjectCard noteCount={unassignedCount} />
-          ) : null
-        }
-      />
+      <SortableSubjectCards subjects={subjects} titleHref="notes" />
     </div>
   )
 }
@@ -205,90 +124,6 @@ function folderBreadcrumbPath(
   }
 
   return path
-}
-
-function DashboardUnassignedNotes() {
-  const trpc = useTRPC()
-
-  const subjectsQuery = useQuery(trpc.subjects.list.queryOptions())
-  const notesQuery = useQuery(
-    trpc.notes.list.queryOptions({
-      subjectId: null,
-      limit: 50,
-    }),
-  )
-
-  const notes = notesQuery.data?.items ?? []
-  const subjects = subjectsQuery.data ?? []
-
-  if (notesQuery.isLoading) {
-    return (
-      <div className="flex flex-col gap-4">
-        <SkeletonBackBar />
-        <NotesGridSkeleton count={3} />
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link
-                  href="/app"
-                  onClick={() => triggerRouteProgressStart('/app')}
-                >
-                  Dashboard
-                </Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Unassigned</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-
-        <PageHeader
-          title="Unassigned"
-          description={`${notes.length} ${notes.length === 1 ? 'note' : 'notes'} without a subject.`}
-          extraAction={
-            <BaseButton asChild>
-              <Link
-                href="/app/new"
-                onClick={() => triggerRouteProgressStart('/app/new')}
-              >
-                New note
-              </Link>
-            </BaseButton>
-          }
-        />
-      </div>
-
-      {notes.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-start gap-4 py-8">
-            <p className="text-muted-foreground text-sm">
-              No unassigned notes.
-            </p>
-            <BaseButton asChild>
-              <Link
-                href="/app/new"
-                onClick={() => triggerRouteProgressStart('/app/new')}
-              >
-                Create note
-              </Link>
-            </BaseButton>
-          </CardContent>
-        </Card>
-      ) : (
-        <SortableNoteCards notes={notes} subjects={subjects} subjectId={null} />
-      )}
-    </div>
-  )
 }
 
 function DashboardSubjectBrowse({ subjectId }: { subjectId: string }) {
@@ -551,10 +386,6 @@ export function DashboardView({ userName }: DashboardViewProps) {
 
   if (!subjectId) {
     return <DashboardSubjects userName={userName} />
-  }
-
-  if (subjectId === unassignedSubjectId) {
-    return <DashboardUnassignedNotes />
   }
 
   return <DashboardSubjectBrowse subjectId={subjectId} />

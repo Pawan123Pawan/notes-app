@@ -79,11 +79,7 @@ function toNoteDetail(note: NoteDocument): NoteDetail {
   }
 }
 
-function parseSubjectId(subjectId?: string) {
-  if (!subjectId) {
-    return undefined
-  }
-
+function parseSubjectId(subjectId: string) {
   if (!mongoose.isValidObjectId(subjectId)) {
     throw new TRPCError({
       code: 'BAD_REQUEST',
@@ -94,15 +90,27 @@ function parseSubjectId(subjectId?: string) {
   return new mongoose.Types.ObjectId(subjectId)
 }
 
+async function assertOwnedSubject(userId: string, subjectId: string) {
+  const subject = await Subject.findOne({
+    _id: parseSubjectId(subjectId),
+    userId,
+  })
+
+  if (!subject) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: 'Subject not found',
+    })
+  }
+
+  return subject
+}
+
 function subjectIdFilter(
-  subjectId: string | null | undefined,
+  subjectId: string | undefined,
 ): Record<string, unknown> {
   if (subjectId === undefined) {
     return {}
-  }
-
-  if (subjectId === null) {
-    return { subjectId: null }
   }
 
   return { subjectId: parseSubjectId(subjectId) }
@@ -131,21 +139,16 @@ function folderIdFilter(
 
 async function nextFrontSortOrder(
   userId: string,
-  subjectId: mongoose.Types.ObjectId | null | undefined,
-  folderId: mongoose.Types.ObjectId | null | undefined = null,
+  subjectId: mongoose.Types.ObjectId,
+  folderId: mongoose.Types.ObjectId | null = null,
 ): Promise<number> {
   const filter: Record<string, unknown> = {
     userId,
+    subjectId,
     sortOrder: { $exists: true },
   }
 
-  if (subjectId === undefined || subjectId === null) {
-    filter.subjectId = null
-  } else {
-    filter.subjectId = subjectId
-  }
-
-  if (folderId === undefined || folderId === null) {
+  if (folderId === null) {
     filter.folderId = null
   } else {
     filter.folderId = folderId
@@ -165,7 +168,7 @@ async function nextFrontSortOrder(
 
 async function ensureNotesSortOrderBackfilled(
   userId: string,
-  subjectId: string | null | undefined,
+  subjectId: string | undefined,
   folderId?: string | null,
 ) {
   const filter: Record<string, unknown> = {
@@ -262,16 +265,14 @@ export async function createNote(
 ): Promise<CreateNoteResult> {
   await connectDB()
 
-  const subjectObjectId = parseSubjectId(input.subjectId)
+  const subject = await assertOwnedSubject(userId, input.subjectId)
+  const subjectObjectId = subject._id
   const folderObjectId =
-    (await resolveFolderIdForNote(
-      userId,
-      subjectObjectId ?? null,
-      input.folderId,
-    )) ?? null
+    (await resolveFolderIdForNote(userId, subjectObjectId, input.folderId)) ??
+    null
   const sortOrder = await nextFrontSortOrder(
     userId,
-    subjectObjectId ?? null,
+    subjectObjectId,
     folderObjectId,
   )
 
@@ -490,38 +491,15 @@ export async function updateNoteSubject(
     })
   }
 
-  let nextSubjectId: mongoose.Types.ObjectId | null = null
+  const subject = await assertOwnedSubject(userId, input.subjectId)
+  const nextSubjectId = subject._id
 
-  if (input.subjectId) {
-    if (!mongoose.isValidObjectId(input.subjectId)) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'Invalid subject id',
-      })
-    }
-
-    const subject = await Subject.findOne({
-      _id: input.subjectId,
+  const nextFolderId =
+    (await resolveFolderIdForNote(
       userId,
-    })
-
-    if (!subject) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'Subject not found',
-      })
-    }
-
-    nextSubjectId = subject._id
-  }
-
-  const nextFolderId = nextSubjectId
-    ? ((await resolveFolderIdForNote(
-        userId,
-        nextSubjectId,
-        input.folderId ?? null,
-      )) ?? null)
-    : null
+      nextSubjectId,
+      input.folderId ?? null,
+    )) ?? null
 
   const sortOrder = await nextFrontSortOrder(
     userId,
