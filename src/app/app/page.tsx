@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 
-import { SubjectsGridSkeleton } from '@/components/app-skeletons'
+import { AppPageSkeleton } from '@/components/app-skeletons'
 import { PageContainer } from '@/components/ui/page-container'
 import { getCurrentSession } from '@/lib/auth-server'
 
@@ -17,7 +17,7 @@ export default async function AppDashboardPage() {
 
   return (
     <PageContainer>
-      <Suspense fallback={<SubjectsGridSkeleton />}>
+      <Suspense fallback={<AppPageSkeleton />}>
         <DashboardView userName={session?.user.name ?? 'there'} />
       </Suspense>
     </PageContainer>

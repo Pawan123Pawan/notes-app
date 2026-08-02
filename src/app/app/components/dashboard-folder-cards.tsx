@@ -371,8 +371,9 @@ export function DashboardFolderCards({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this notes folder?</AlertDialogTitle>
             <AlertDialogDescription>
-              Notes and notes subfolders inside “{deleteFolder?.name}” move up
-              to the parent notes folder. The notes folder itself is removed.
+              “{deleteFolder?.name}” and all nested notes folders will be
+              deleted. Notes inside them move up to the parent notes folder and
+              are not deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -719,7 +719,7 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {isInsideFolder
-                ? 'Notes and notes subfolders inside it move up to the parent notes folder (or subject root). Notes are not deleted.'
+                ? 'This notes folder and all nested notes folders will be deleted. Notes inside them move up to the parent notes folder (or subject root) and are not deleted.'
                 : 'Notes in this subject will be kept but removed from the folder. Nested notes folders will be deleted. This action cannot be undone.'}
             </AlertDialogDescription>
           </AlertDialogHeader>

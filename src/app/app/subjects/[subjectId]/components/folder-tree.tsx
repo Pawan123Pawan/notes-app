@@ -640,8 +640,9 @@ export function FolderTree({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this notes folder?</AlertDialogTitle>
             <AlertDialogDescription>
-              Notes and notes subfolders inside it move up to the parent folder
-              (or subject root). Notes are not deleted.
+              This notes folder and all nested notes folders will be deleted.
+              Notes inside them move up to the parent folder (or subject root)
+              and are not deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

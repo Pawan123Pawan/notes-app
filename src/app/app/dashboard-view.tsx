@@ -10,7 +10,10 @@ import {
   DashboardFolderCards,
   type FolderCreateState,
 } from '@/app/app/components/dashboard-folder-cards'
-import { SubjectsGridSkeleton } from '@/components/app-skeletons'
+import {
+  DashboardSubjectBrowseSkeleton,
+  SubjectsGridSkeleton,
+} from '@/components/app-skeletons'
 import { SortableNoteCards } from '@/components/sortable-note-cards'
 import { SortableSubjectCards } from '@/components/sortable-subject-cards'
 import {
@@ -24,7 +27,6 @@ import {
 import { BaseButton, Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageHeader } from '@/components/ui/page-header'
-import { Skeleton } from '@/components/ui/skeleton'
 import { triggerRouteProgressStart } from '@/lib/route-progress'
 import { useTRPC } from '@/trpc/react'
 
@@ -179,12 +181,7 @@ function DashboardSubjectBrowse({ subjectId }: { subjectId: string }) {
     subjectQuery.isLoading || foldersQuery.isLoading || notesQuery.isLoading
 
   if (isLoading) {
-    return (
-      <div className="flex flex-col gap-4">
-        <SkeletonBackBar />
-        <SubjectsGridSkeleton />
-      </div>
-    )
+    return <DashboardSubjectBrowseSkeleton />
   }
 
   if (subjectQuery.isError || !subjectQuery.data) {
@@ -366,16 +363,6 @@ function DashboardSubjectBrowse({ subjectId }: { subjectId: string }) {
           onCreateStateChange={setCreateState}
         />
       ) : null}
-    </div>
-  )
-}
-
-function SkeletonBackBar() {
-  return (
-    <div className="flex flex-col gap-2">
-      <Skeleton className="h-8 w-28" />
-      <Skeleton className="h-6 w-40" />
-      <Skeleton className="h-4 w-56" />
     </div>
   )
 }

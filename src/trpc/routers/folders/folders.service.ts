@@ -538,6 +538,44 @@ export async function reorderFolders(
   return { ok: true }
 }
 
+async function collectDescendantFolderIds(
+  userId: string,
+  subjectId: mongoose.Types.ObjectId,
+  rootFolderId: mongoose.Types.ObjectId,
+): Promise<mongoose.Types.ObjectId[]> {
+  const folders = await Folder.find({
+    userId,
+    subjectId,
+  })
+    .select('_id parentId')
+    .lean()
+
+  const childrenByParent = new Map<string, mongoose.Types.ObjectId[]>()
+
+  for (const row of folders) {
+    const parentKey = row.parentId?.toString() ?? 'root'
+    const list = childrenByParent.get(parentKey) ?? []
+    list.push(row._id)
+    childrenByParent.set(parentKey, list)
+  }
+
+  const descendants: mongoose.Types.ObjectId[] = []
+  const queue = [...(childrenByParent.get(rootFolderId.toString()) ?? [])]
+
+  while (queue.length > 0) {
+    const currentId = queue.shift()
+    if (!currentId) {
+      continue
+    }
+
+    descendants.push(currentId)
+    const children = childrenByParent.get(currentId.toString()) ?? []
+    queue.push(...children)
+  }
+
+  return descendants
+}
+
 export async function deleteFolder(
   userId: string,
   input: DeleteFolderInput,
@@ -546,25 +584,27 @@ export async function deleteFolder(
 
   const folder = await requireFolder(userId, input.folderId)
   const nextParentId = folder.parentId ?? null
+  const descendantIds = await collectDescendantFolderIds(
+    userId,
+    folder.subjectId,
+    folder._id,
+  )
+  const folderIdsToDelete = [folder._id, ...descendantIds]
 
   await Promise.all([
-    Folder.updateMany(
-      {
-        userId,
-        subjectId: folder.subjectId,
-        parentId: folder._id,
-      },
-      { $set: { parentId: nextParentId } },
-    ),
     Note.updateMany(
       {
         userId,
         subjectId: folder.subjectId,
-        folderId: folder._id,
+        folderId: { $in: folderIdsToDelete },
       },
       { $set: { folderId: nextParentId } },
     ),
-    Folder.deleteOne({ _id: folder._id, userId }),
+    Folder.deleteMany({
+      userId,
+      subjectId: folder.subjectId,
+      _id: { $in: folderIdsToDelete },
+    }),
   ])
 }
 
