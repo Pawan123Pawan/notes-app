@@ -123,7 +123,7 @@ export function NotebookPdfViewer({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b px-3 py-2">
+      <div className="flex shrink-0 flex-col gap-4 border-b px-3 py-2">
         <Breadcrumb className="min-w-0">
           <BreadcrumbList className="flex-wrap sm:flex-nowrap">
             <BreadcrumbItem>
@@ -179,51 +179,56 @@ export function NotebookPdfViewer({
           </BreadcrumbList>
         </Breadcrumb>
 
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-sm"
-            aria-label="Zoom out"
-            disabled={zoom <= minZoom}
-            onClick={() => setZoom(zoom - zoomStep)}
-          >
-            <MinusIcon />
-          </Button>
-          <span className="text-muted-foreground w-14 text-center text-xs tabular-nums">
-            {zoomLabel}
-          </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-sm"
-            aria-label="Zoom in"
-            disabled={zoom >= maxZoom}
-            onClick={() => setZoom(zoom + zoomStep)}
-          >
-            <PlusIcon />
-          </Button>
-          <Button
-            type="button"
-            variant={fitMode ? 'secondary' : 'outline'}
-            size="sm"
-            aria-label="Fit to width"
-            aria-pressed={fitMode}
-            onClick={() => setFitMode(true)}
-          >
-            <MaximizeIcon />
-            Fit width
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            aria-label="Print notebook"
-            onClick={() => iframeRef.current?.contentWindow?.print()}
-          >
-            <PrinterIcon />
-            Print
-          </Button>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-foreground min-w-0 truncate text-sm font-semibold">
+            {title}
+          </h1>
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              aria-label="Zoom out"
+              disabled={zoom <= minZoom}
+              onClick={() => setZoom(zoom - zoomStep)}
+            >
+              <MinusIcon />
+            </Button>
+            <span className="text-muted-foreground w-14 text-center text-xs tabular-nums">
+              {zoomLabel}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              aria-label="Zoom in"
+              disabled={zoom >= maxZoom}
+              onClick={() => setZoom(zoom + zoomStep)}
+            >
+              <PlusIcon />
+            </Button>
+            <Button
+              type="button"
+              variant={fitMode ? 'secondary' : 'outline'}
+              size="sm"
+              aria-label="Fit to width"
+              aria-pressed={fitMode}
+              onClick={() => setFitMode(true)}
+            >
+              <MaximizeIcon />
+              Fit width
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-label="Print notebook"
+              onClick={() => iframeRef.current?.contentWindow?.print()}
+            >
+              <PrinterIcon />
+              Print
+            </Button>
+          </div>
         </div>
       </div>
 

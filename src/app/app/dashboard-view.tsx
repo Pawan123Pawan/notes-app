@@ -38,11 +38,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { PageHeader } from '@/components/ui/page-header'
 import { Skeleton } from '@/components/ui/skeleton'
 import { triggerRouteProgressStart } from '@/lib/route-progress'
 import { useTRPC } from '@/trpc/react'
 
 const unassignedSubjectId = 'none'
+
+export type DashboardViewProps = {
+  userName: string
+}
 
 function UnassignedSubjectCard({ noteCount }: { noteCount: number }) {
   return (
@@ -93,7 +98,7 @@ function UnassignedSubjectCard({ noteCount }: { noteCount: number }) {
   )
 }
 
-function DashboardSubjects() {
+function DashboardSubjects({ userName }: { userName: string }) {
   const trpc = useTRPC()
   const subjectsQuery = useQuery(trpc.subjects.list.queryOptions())
   const unassignedNotesQuery = useQuery(
@@ -106,51 +111,79 @@ function DashboardSubjects() {
   const subjects = subjectsQuery.data ?? []
   const unassignedCount = unassignedNotesQuery.data?.items.length ?? 0
 
+  const chrome = (
+    <div className="flex flex-col gap-4">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbPage>Dashboard</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <PageHeader
+        title="Dashboard"
+        description={`Welcome back, ${userName}.`}
+      />
+    </div>
+  )
+
   if (subjectsQuery.isLoading || unassignedNotesQuery.isLoading) {
-    return <SubjectsGridSkeleton />
+    return (
+      <div className="flex flex-col gap-6">
+        {chrome}
+        <SubjectsGridSkeleton />
+      </div>
+    )
   }
 
   if (subjects.length === 0 && unassignedCount === 0) {
     return (
-      <Card>
-        <CardContent className="flex flex-col gap-4 py-8">
-          <FolderOpenIcon className="text-muted-foreground size-8" />
-          <p className="text-muted-foreground text-sm">
-            No subjects or notes yet. Create a subject or add your first note.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <BaseButton asChild>
-              <Link
-                href="/app/new"
-                onClick={() => triggerRouteProgressStart('/app/new')}
-              >
-                Create note
-              </Link>
-            </BaseButton>
-            <BaseButton asChild variant="outline">
-              <Link
-                href="/app/subjects"
-                onClick={() => triggerRouteProgressStart('/app/subjects')}
-              >
-                Manage subjects
-              </Link>
-            </BaseButton>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col gap-6">
+        {chrome}
+        <Card>
+          <CardContent className="flex flex-col gap-4 py-8">
+            <FolderOpenIcon className="text-muted-foreground size-8" />
+            <p className="text-muted-foreground text-sm">
+              No subjects or notes yet. Create a subject or add your first note.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <BaseButton asChild>
+                <Link
+                  href="/app/new"
+                  onClick={() => triggerRouteProgressStart('/app/new')}
+                >
+                  Create note
+                </Link>
+              </BaseButton>
+              <BaseButton asChild variant="outline">
+                <Link
+                  href="/app/subjects"
+                  onClick={() => triggerRouteProgressStart('/app/subjects')}
+                >
+                  Manage subjects
+                </Link>
+              </BaseButton>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
   return (
-    <SortableSubjectCards
-      subjects={subjects}
-      titleHref="notes"
-      unassignedSlot={
-        unassignedCount > 0 ? (
-          <UnassignedSubjectCard noteCount={unassignedCount} />
-        ) : null
-      }
-    />
+    <div className="flex flex-col gap-6">
+      {chrome}
+      <SortableSubjectCards
+        subjects={subjects}
+        titleHref="notes"
+        unassignedSlot={
+          unassignedCount > 0 ? (
+            <UnassignedSubjectCard noteCount={unassignedCount} />
+          ) : null
+        }
+      />
+    </div>
   )
 }
 
@@ -199,35 +232,40 @@ function DashboardUnassignedNotes() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link
-                href="/app"
-                onClick={() => triggerRouteProgressStart('/app')}
-              >
-                Dashboard
-              </Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Unassigned</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <div className="flex flex-col gap-4">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link
+                  href="/app"
+                  onClick={() => triggerRouteProgressStart('/app')}
+                >
+                  Dashboard
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Unassigned</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Unassigned</h2>
-        <BaseButton asChild>
-          <Link
-            href="/app/new"
-            onClick={() => triggerRouteProgressStart('/app/new')}
-          >
-            New note
-          </Link>
-        </BaseButton>
+        <PageHeader
+          title="Unassigned"
+          description={`${notes.length} ${notes.length === 1 ? 'note' : 'notes'} without a subject.`}
+          extraAction={
+            <BaseButton asChild>
+              <Link
+                href="/app/new"
+                onClick={() => triggerRouteProgressStart('/app/new')}
+              >
+                New note
+              </Link>
+            </BaseButton>
+          }
+        />
       </div>
 
       {notes.length === 0 ? (
@@ -295,7 +333,6 @@ function DashboardSubjectBrowse({ subjectId }: { subjectId: string }) {
 
   const notes = notesQuery.data?.items ?? []
   const subjects = subjectsQuery.data ?? []
-  const subjectName = subjectQuery.data?.name ?? 'Subject'
   const folderPath = folderBreadcrumbPath(folders, selectedFolderId)
   const subjectHref = `/app?subjectId=${subjectId}`
 
@@ -303,7 +340,6 @@ function DashboardSubjectBrowse({ subjectId }: { subjectId: string }) {
     ? `/app/new?subjectId=${subjectId}&folderId=${selectedFolderId}`
     : `/app/new?subjectId=${subjectId}`
 
-  const heading = selectedFolder?.name ?? subjectName
   const isLoading =
     subjectQuery.isLoading || foldersQuery.isLoading || notesQuery.isLoading
 
@@ -331,91 +367,100 @@ function DashboardSubjectBrowse({ subjectId }: { subjectId: string }) {
     )
   }
 
+  const subject = subjectQuery.data
+  const heading = selectedFolder?.name ?? subject.name
+  const description = selectedFolder
+    ? `${selectedFolder.noteCount} ${selectedFolder.noteCount === 1 ? 'note' : 'notes'} in this notes folder.`
+    : `${subject.noteCount} ${subject.noteCount === 1 ? 'note' : 'notes'} in this subject.`
   const isEmpty = childFolders.length === 0 && notes.length === 0
 
   return (
     <div className="flex flex-col gap-6">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link
-                href="/app"
-                onClick={() => triggerRouteProgressStart('/app')}
-              >
-                Dashboard
-              </Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          {folderPath.length > 0 ? (
-            <>
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link
-                    href={subjectHref}
-                    onClick={() => triggerRouteProgressStart(subjectHref)}
-                  >
-                    {subjectName}
-                  </Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              {folderPath.map((folder, index) => {
-                const isLast = index === folderPath.length - 1
-                const href = `/app?subjectId=${subjectId}&folderId=${folder.id}`
-
-                return (
-                  <span key={folder.id} className="contents">
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                      {isLast ? (
-                        <BreadcrumbPage>{folder.name}</BreadcrumbPage>
-                      ) : (
-                        <BreadcrumbLink asChild>
-                          <Link
-                            href={href}
-                            onClick={() => triggerRouteProgressStart(href)}
-                          >
-                            {folder.name}
-                          </Link>
-                        </BreadcrumbLink>
-                      )}
-                    </BreadcrumbItem>
-                  </span>
-                )
-              })}
-            </>
-          ) : (
+      <div className="flex flex-col gap-4">
+        <Breadcrumb>
+          <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbPage>{subjectName}</BreadcrumbPage>
+              <BreadcrumbLink asChild>
+                <Link
+                  href="/app"
+                  onClick={() => triggerRouteProgressStart('/app')}
+                >
+                  Dashboard
+                </Link>
+              </BreadcrumbLink>
             </BreadcrumbItem>
-          )}
-        </BreadcrumbList>
-      </Breadcrumb>
+            <BreadcrumbSeparator />
+            {folderPath.length > 0 ? (
+              <>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link
+                      href={subjectHref}
+                      onClick={() => triggerRouteProgressStart(subjectHref)}
+                    >
+                      {subject.name}
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                {folderPath.map((folder, index) => {
+                  const isLast = index === folderPath.length - 1
+                  const href = `/app?subjectId=${subjectId}&folderId=${folder.id}`
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">{heading}</h2>
+                  return (
+                    <span key={folder.id} className="contents">
+                      <BreadcrumbSeparator />
+                      <BreadcrumbItem>
+                        {isLast ? (
+                          <BreadcrumbPage>{folder.name}</BreadcrumbPage>
+                        ) : (
+                          <BreadcrumbLink asChild>
+                            <Link
+                              href={href}
+                              onClick={() => triggerRouteProgressStart(href)}
+                            >
+                              {folder.name}
+                            </Link>
+                          </BreadcrumbLink>
+                        )}
+                      </BreadcrumbItem>
+                    </span>
+                  )
+                })}
+              </>
+            ) : (
+              <BreadcrumbItem>
+                <BreadcrumbPage>{subject.name}</BreadcrumbPage>
+              </BreadcrumbItem>
+            )}
+          </BreadcrumbList>
+        </Breadcrumb>
 
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              setCreateState({ open: true, parentId: selectedFolderId })
-            }
-          >
-            <PlusIcon />
-            New notes folder
-          </Button>
-          <BaseButton asChild>
-            <Link
-              href={newNoteHref}
-              onClick={() => triggerRouteProgressStart(newNoteHref)}
-            >
-              New note
-            </Link>
-          </BaseButton>
-        </div>
+        <PageHeader
+          title={heading}
+          description={description}
+          extraAction={
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  setCreateState({ open: true, parentId: selectedFolderId })
+                }
+              >
+                <PlusIcon />
+                New notes folder
+              </Button>
+              <BaseButton asChild>
+                <Link
+                  href={newNoteHref}
+                  onClick={() => triggerRouteProgressStart(newNoteHref)}
+                >
+                  New note
+                </Link>
+              </BaseButton>
+            </div>
+          }
+        />
       </div>
 
       {isEmpty ? (
@@ -500,12 +545,12 @@ function SkeletonBackBar() {
   )
 }
 
-export function DashboardView() {
+export function DashboardView({ userName }: DashboardViewProps) {
   const searchParams = useSearchParams()
   const subjectId = searchParams.get('subjectId')
 
   if (!subjectId) {
-    return <DashboardSubjects />
+    return <DashboardSubjects userName={userName} />
   }
 
   if (subjectId === unassignedSubjectId) {

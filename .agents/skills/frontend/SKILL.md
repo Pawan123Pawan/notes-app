@@ -315,7 +315,7 @@ The workspace chrome (**`AppShell`**) renders a thin top progress bar during in-
 
 ## Page chrome vs child responsibility
 
-Move **page-level layout and navigation chrome** (**`PageContainer`**, **`Breadcrumb`**, **`PageHeader`**, tab shells that mirror the route, etc.) to the **parent `page.tsx` or `layout.tsx`** when you can — especially when the interactive part is a **`'use client'`** boundary. Server components then own **document framing**; the client subtree stays smaller and matches **[ui-and-client-data.md](./references/ui-and-client-data.md)** workspace patterns (breadcrumbs above **`PageHeader`**, **`PageContainer`** wrapper) without pushing that structure through **`'use client'`**.
+Move **page-level layout and navigation chrome** (**`PageContainer`**, **`Breadcrumb`**, **`PageHeader`**, tab shells that mirror the route, etc.) to the **parent `page.tsx` or `layout.tsx`** when you can — especially when the interactive part is a **`'use client'`** boundary. Server components then own **document framing**; the client subtree stays smaller and matches **[ui-and-client-data.md](./references/ui-and-client-data.md)** workspace patterns (breadcrumbs above **`PageHeader`** with **`gap-4`**, **`PageContainer`** wrapper) without pushing that structure through **`'use client'`**.
 
 **Children own their behavior, not the parent’s shell.** A client module colocated with a route should focus on **forms, mutations, and local UI state** — not on wrapping or re-defining **whole-page** layout that belongs on the server page.
 

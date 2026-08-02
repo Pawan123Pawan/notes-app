@@ -51,7 +51,7 @@ Keep the **[`SKILL.md`](../SKILL.md)** topic index aligned when rules here move 
 
 - **Page container consistency:** for workspace page-level layouts, use **`PageContainer`** from **`src/components/ui/page-container.tsx`** as the outer wrapper. It standardizes responsive spacing and padding (`gap-4` on mobile, `sm:gap-8`, `p-4`, `sm:p-6`), so avoid duplicating these classes on ad-hoc wrappers.
 
-- **Workspace breadcrumbs:** on workspace pages under **`src/app/app/[workspaceSlug]/`**, render a breadcrumb using primitives from **`src/components/ui/breadcrumb.tsx`** **above** the `PageHeader` component (never inside `PageHeader` props). Include a link back to **`/app/{workspaceSlug}`** labeled “Workspace Home”; the current page should be the terminal breadcrumb item.
+- **Workspace breadcrumbs:** on workspace pages under **`src/app/app/[workspaceSlug]/`**, render a breadcrumb using primitives from **`src/components/ui/breadcrumb.tsx`** **above** the `PageHeader` component (never inside `PageHeader` props). Wrap the breadcrumb and `PageHeader` in a `flex flex-col gap-4` stack so spacing between them is always **`gap-4`**. Include a link back to **`/app/{workspaceSlug}`** labeled “Workspace Home”; the current page should be the terminal breadcrumb item.
 
 - **Tabbed page deep links:** when a page uses tabs (for example with `Tabs`, `TabsList`, `TabsTrigger`, and `TabsContent`), provide a deep link for each tab using a query param (for example `?tab=members`). Use tab links (`TabsTrigger asChild` + `Link`) instead of local-only tab state so URLs are shareable and refresh-safe. Define and validate allowed tab values, and default to the primary tab when the query param is missing or invalid.
 
@@ -59,23 +59,25 @@ Keep the **[`SKILL.md`](../SKILL.md)** topic index aligned when rules here move 
 
 ```tsx
 <PageContainer>
-  <Breadcrumb>
-    <BreadcrumbList>
-      <BreadcrumbItem>
-        <BreadcrumbLink asChild>
-          <Link href={`/app/${workspaceSlug}`}>Workspace Home</Link>
-        </BreadcrumbLink>
-      </BreadcrumbItem>
-      <BreadcrumbSeparator />
-      <BreadcrumbItem>
-        <BreadcrumbPage>Settings</BreadcrumbPage>
-      </BreadcrumbItem>
-    </BreadcrumbList>
-  </Breadcrumb>
+  <div className="flex flex-col gap-4">
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <Link href={`/app/${workspaceSlug}`}>Workspace Home</Link>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbPage>Settings</BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
 
-  <PageHeader
-    title="Settings"
-    description="Manage your profile, security, and preferences."
-  />
+    <PageHeader
+      title="Settings"
+      description="Manage your profile, security, and preferences."
+    />
+  </div>
 </PageContainer>
 ```

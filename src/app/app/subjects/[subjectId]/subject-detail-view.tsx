@@ -28,6 +28,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 import { BaseButton, Button } from '@/components/ui/button'
 import {
   Card,
@@ -82,6 +90,26 @@ function folderHref(subjectId: string, folderId: string | null) {
   }
 
   return `/app/subjects/${subjectId}?folderId=${folderId}`
+}
+
+function folderBreadcrumbPath(
+  folders: Array<{ id: string; parentId: string | null; name: string }>,
+  folderId: string | null,
+) {
+  if (!folderId) {
+    return []
+  }
+
+  const byId = new Map(folders.map((folder) => [folder.id, folder]))
+  const path: Array<{ id: string; name: string }> = []
+  let current = byId.get(folderId)
+
+  while (current) {
+    path.unshift({ id: current.id, name: current.name })
+    current = current.parentId ? byId.get(current.parentId) : undefined
+  }
+
+  return path
 }
 
 export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
@@ -337,6 +365,7 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
   const subject = subjectQuery.data
   const notes = notesQuery.data?.items ?? []
   const subjects = subjectsQuery.data ?? []
+  const folderPath = folderBreadcrumbPath(folders, selectedFolderId)
   const title = selectedFolder?.name ?? subject.name
   const description = selectedFolder
     ? `${selectedFolder.noteCount} ${selectedFolder.noteCount === 1 ? 'note' : 'notes'} in this notes folder.`
@@ -348,6 +377,7 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
   const newNoteHref = selectedFolderId
     ? `/app/new?subjectId=${subjectId}&folderId=${selectedFolderId}`
     : `/app/new?subjectId=${subjectId}`
+  const subjectHref = `/app/subjects/${subjectId}`
 
   const renamePending =
     updateSubjectMutation.isPending || renameFolderMutation.isPending
@@ -420,11 +450,71 @@ export function SubjectDetailView({ subjectId }: SubjectDetailViewProps) {
   return (
     <>
       <div className="space-y-6">
-        <PageHeader
-          title={title}
-          description={description}
-          extraAction={headerActions}
-        />
+        <div className="flex flex-col gap-4">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link
+                    href="/app/subjects"
+                    onClick={() => triggerRouteProgressStart('/app/subjects')}
+                  >
+                    Subjects
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              {folderPath.length > 0 ? (
+                <>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                      <Link
+                        href={subjectHref}
+                        onClick={() => triggerRouteProgressStart(subjectHref)}
+                      >
+                        {subject.name}
+                      </Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  {folderPath.map((folder, index) => {
+                    const isLast = index === folderPath.length - 1
+                    const href = folderHref(subjectId, folder.id)
+
+                    return (
+                      <span key={folder.id} className="contents">
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                          {isLast ? (
+                            <BreadcrumbPage>{folder.name}</BreadcrumbPage>
+                          ) : (
+                            <BreadcrumbLink asChild>
+                              <Link
+                                href={href}
+                                onClick={() => triggerRouteProgressStart(href)}
+                              >
+                                {folder.name}
+                              </Link>
+                            </BreadcrumbLink>
+                          )}
+                        </BreadcrumbItem>
+                      </span>
+                    )
+                  })}
+                </>
+              ) : (
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{subject.name}</BreadcrumbPage>
+                </BreadcrumbItem>
+              )}
+            </BreadcrumbList>
+          </Breadcrumb>
+
+          <PageHeader
+            title={title}
+            description={description}
+            extraAction={headerActions}
+          />
+        </div>
 
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(17rem,20rem)_1fr]">
           <Card className="lg:sticky lg:top-4">
