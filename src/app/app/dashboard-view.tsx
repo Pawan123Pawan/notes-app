@@ -405,7 +405,7 @@ function DashboardSubjectBrowse({ subjectId }: { subjectId: string }) {
             }
           >
             <PlusIcon />
-            New folder
+            New notes folder
           </Button>
           <BaseButton asChild>
             <Link
@@ -423,8 +423,8 @@ function DashboardSubjectBrowse({ subjectId }: { subjectId: string }) {
           <CardContent className="flex flex-col items-start gap-4 py-8">
             <p className="text-muted-foreground text-sm">
               {selectedFolderId
-                ? 'No subfolders or notes here yet.'
-                : 'No folders or notes in this subject yet.'}
+                ? 'No notes subfolders or notes here yet.'
+                : 'No notes folders or notes in this subject yet.'}
             </p>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -435,7 +435,7 @@ function DashboardSubjectBrowse({ subjectId }: { subjectId: string }) {
                 }
               >
                 <PlusIcon />
-                New folder
+                New notes folder
               </Button>
               <BaseButton asChild>
                 <Link
@@ -452,7 +452,7 @@ function DashboardSubjectBrowse({ subjectId }: { subjectId: string }) {
         <div className="flex flex-col gap-8">
           {childFolders.length > 0 ? (
             <section className="flex flex-col gap-3">
-              <h3 className="text-sm font-semibold">Folders</h3>
+              <h3 className="text-sm font-semibold">Notes Folders</h3>
               <DashboardFolderCards
                 subjectId={subjectId}
                 folders={childFolders}

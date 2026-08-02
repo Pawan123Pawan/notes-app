@@ -13,7 +13,6 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { PageContainer } from '@/components/ui/page-container'
-import { PageHeader } from '@/components/ui/page-header'
 import { createServerCaller } from '@/trpc/server'
 
 import { SubjectDetailView } from './subject-detail-view'
@@ -61,10 +60,6 @@ export default async function SubjectPage({
     folderPath.push(...chain)
   }
 
-  const description = selectedFolder
-    ? `${selectedFolder.noteCount} ${selectedFolder.noteCount === 1 ? 'note' : 'notes'} in this folder.`
-    : `${subject.noteCount} ${subject.noteCount === 1 ? 'note' : 'notes'} in this subject.`
-
   return (
     <PageContainer>
       <Breadcrumb>
@@ -111,11 +106,6 @@ export default async function SubjectPage({
           )}
         </BreadcrumbList>
       </Breadcrumb>
-
-      <PageHeader
-        title={selectedFolder?.name ?? subject.name}
-        description={description}
-      />
 
       <Suspense fallback={<SubjectDetailSkeleton />}>
         <SubjectDetailView subjectId={subjectId} />

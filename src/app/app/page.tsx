@@ -10,7 +10,7 @@ import { DashboardView } from './dashboard-view'
 
 export const metadata: Metadata = {
   title: 'Dashboard',
-  description: 'Browse subjects, topic folders, and notes.',
+  description: 'Browse subjects, notes folders, and notes.',
 }
 
 export default async function AppDashboardPage() {

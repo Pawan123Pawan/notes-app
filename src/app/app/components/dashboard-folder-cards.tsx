@@ -135,13 +135,13 @@ export function DashboardFolderCards({
       onSuccess: async () => {
         await invalidateFolders()
         setRenameFolder(null)
-        toast.success('Folder renamed')
+        toast.success('Notes folder renamed')
       },
       onError: (error) => {
         showErrorToast(
-          'Could not rename folder',
+          'Could not rename notes folder',
           error,
-          'Unable to rename this folder.',
+          'Unable to rename this notes folder.',
         )
       },
     }),
@@ -152,13 +152,13 @@ export function DashboardFolderCards({
       onSuccess: async () => {
         await invalidateFolders()
         setDeleteFolder(null)
-        toast.success('Folder deleted')
+        toast.success('Notes folder deleted')
       },
       onError: (error) => {
         showErrorToast(
-          'Could not delete folder',
+          'Could not delete notes folder',
           error,
-          'Unable to delete this folder.',
+          'Unable to delete this notes folder.',
         )
       },
     }),
@@ -224,7 +224,7 @@ export function DashboardFolderCards({
                           type="button"
                           variant="outline"
                           size="icon-sm"
-                          aria-label={`${folder.name} folder actions`}
+                          aria-label={`${folder.name} notes folder actions`}
                         >
                           <MoreHorizontalIcon />
                         </Button>
@@ -246,7 +246,7 @@ export function DashboardFolderCards({
                             onClick={() => openCreate(folder.id)}
                           >
                             <PlusIcon />
-                            New subfolder
+                            New notes subfolder
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => setRenameFolder(folder)}
@@ -261,7 +261,7 @@ export function DashboardFolderCards({
                           onClick={() => setDeleteFolder(folder)}
                         >
                           <Trash2Icon />
-                          Delete folder
+                          Delete notes folder
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -270,7 +270,7 @@ export function DashboardFolderCards({
                     {folder.noteCount}{' '}
                     {folder.noteCount === 1 ? 'note' : 'notes'}
                     {childrenCount > 0
-                      ? ` · ${childrenCount} ${childrenCount === 1 ? 'subfolder' : 'subfolders'}`
+                      ? ` · ${childrenCount} ${childrenCount === 1 ? 'notes subfolder' : 'notes subfolders'}`
                       : null}
                   </CardDescription>
                 </CardHeader>
@@ -294,7 +294,7 @@ export function DashboardFolderCards({
                   open: false,
                   parentId: createState.parentId,
                 })
-                toast.success('Folder created')
+                toast.success('Notes folder created')
               }}
             />
           ) : null}
@@ -312,9 +312,9 @@ export function DashboardFolderCards({
         <DialogContent>
           <form noValidate onSubmit={submitRename}>
             <DialogHeader>
-              <DialogTitle>Rename folder</DialogTitle>
+              <DialogTitle>Rename notes folder</DialogTitle>
               <DialogDescription>
-                Update the name of this topic folder.
+                Update the name of this notes folder.
               </DialogDescription>
             </DialogHeader>
 
@@ -369,10 +369,10 @@ export function DashboardFolderCards({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this folder?</AlertDialogTitle>
+            <AlertDialogTitle>Delete this notes folder?</AlertDialogTitle>
             <AlertDialogDescription>
-              Notes and subfolders inside “{deleteFolder?.name}” move up to the
-              parent folder. The folder itself is removed.
+              Notes and notes subfolders inside “{deleteFolder?.name}” move up
+              to the parent notes folder. The notes folder itself is removed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -386,7 +386,7 @@ export function DashboardFolderCards({
                 }
               }}
             >
-              {deleteMutation.isPending ? 'Deleting...' : 'Delete folder'}
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete notes folder'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -418,9 +418,9 @@ function CreateFolderForm({
       },
       onError: (error) => {
         showErrorToast(
-          'Could not create folder',
+          'Could not create notes folder',
           error,
-          'Unable to create this folder.',
+          'Unable to create this notes folder.',
         )
       },
     }),
@@ -448,11 +448,13 @@ function CreateFolderForm({
   return (
     <form noValidate onSubmit={submitCreate}>
       <DialogHeader>
-        <DialogTitle>{parentId ? 'New subfolder' : 'New folder'}</DialogTitle>
+        <DialogTitle>
+          {parentId ? 'New notes subfolder' : 'New notes folder'}
+        </DialogTitle>
         <DialogDescription>
           {parentId
-            ? 'Create a nested topic folder under the selected folder.'
-            : 'Create a topic folder in this subject.'}
+            ? 'Create a nested notes folder under the selected notes folder.'
+            : 'Create a notes folder in this subject.'}
         </DialogDescription>
       </DialogHeader>
 

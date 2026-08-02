@@ -99,10 +99,22 @@ export function NoteDetailSkeleton() {
 export function SubjectDetailSkeleton() {
   return (
     <div
-      className="flex flex-col gap-8"
+      className="flex flex-col gap-6"
       aria-busy="true"
       aria-label="Loading subject"
     >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-56" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Skeleton className="h-9 w-36" />
+          <Skeleton className="h-9 w-24" />
+          <Skeleton className="size-8 rounded-md" />
+        </div>
+      </div>
+
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(17rem,20rem)_1fr]">
         <Card>
           <CardHeader className="gap-2 border-b">
@@ -122,12 +134,9 @@ export function SubjectDetailSkeleton() {
 
         <Card size="sm" className="gap-0 py-0">
           <CardHeader className="border-b py-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="space-y-2">
-                <Skeleton className="h-6 w-44" />
-                <Skeleton className="h-4 w-28" />
-              </div>
-              <Skeleton className="h-9 w-28 shrink-0" />
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-44" />
+              <Skeleton className="h-4 w-28" />
             </div>
           </CardHeader>
           <CardContent className="py-4">
@@ -135,22 +144,6 @@ export function SubjectDetailSkeleton() {
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-5 w-36" />
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <div className="flex flex-1 flex-col gap-2">
-              <Skeleton className="h-4 w-12" />
-              <Skeleton className="h-9 w-full" />
-            </div>
-            <Skeleton className="h-9 w-16 shrink-0" />
-          </div>
-          <Skeleton className="h-9 w-36" />
-        </CardContent>
-      </Card>
     </div>
   )
 }
