@@ -1,3 +1,239 @@
+const REVISION_NOTES_CSS = `
+:root {
+  --primary: #1e3a8a;
+  --secondary: #0d9488;
+  --accent: #d97706;
+  --danger: #b91c1c;
+  --bg-light: #f8fafc;
+  --text-dark: #1e293b;
+  --card-bg: #ffffff;
+  --border-color: #cbd5e1;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: 'Noto Sans Devanagari', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  line-height: 1.65;
+  color: var(--text-dark);
+  background-color: var(--bg-light);
+  padding: 24px;
+}
+.container {
+  max-width: 1100px;
+  margin: auto;
+  background: var(--card-bg);
+  padding: 36px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border-color);
+  box-sizing: border-box;
+}
+.container h1 {
+  text-align: center;
+  color: var(--primary);
+  border-bottom: 3px solid var(--accent);
+  padding-bottom: 16px;
+  font-size: 2.1rem;
+  margin-top: 0;
+}
+.container h2 {
+  color: var(--primary);
+  border-left: 6px solid var(--secondary);
+  padding-left: 12px;
+  margin-top: 36px;
+  margin-bottom: 16px;
+  font-size: 1.5rem;
+  background: #f1f5f9;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  border-radius: 0 6px 6px 0;
+}
+.container h3 {
+  color: var(--secondary);
+  margin-top: 24px;
+  margin-bottom: 8px;
+  font-size: 1.2rem;
+}
+.container p {
+  margin: 8px 0;
+}
+.bilingual-block {
+  margin-bottom: 14px;
+}
+.hi-text {
+  font-weight: 500;
+  color: #0f172a;
+}
+.en-text {
+  font-size: 0.94rem;
+  color: #475569;
+  font-style: italic;
+}
+.card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--primary);
+  border-radius: 6px;
+  padding: 16px;
+  margin: 14px 0;
+}
+.card-accent {
+  border-left-color: var(--accent);
+  background: #fffdfa;
+}
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 12px;
+  color: #fff;
+  background: var(--secondary);
+  margin-right: 6px;
+}
+.badge-accent {
+  background: var(--accent);
+}
+.badge-danger {
+  background: var(--danger);
+}
+.container table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0;
+  font-size: 0.92rem;
+}
+.container th,
+.container td {
+  border: 1px solid var(--border-color);
+  padding: 10px 14px;
+  text-align: left;
+}
+.container th {
+  background-color: var(--primary);
+  color: #ffffff;
+}
+.container tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+.mcq-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-top: 20px;
+}
+.mcq-item {
+  border: 1px solid var(--border-color);
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 16px;
+}
+.mcq-header {
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+.mcq-options {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+.mcq-options li {
+  margin-bottom: 4px;
+}
+.mcq-answer-side {
+  background: #f1f5f9;
+  border-left: 4px solid var(--accent);
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  margin-top: 8px;
+  border-radius: 0 4px 4px 0;
+}
+.mcq-ans-label {
+  font-weight: bold;
+  color: var(--danger);
+}
+.mcq-exp {
+  color: #334155;
+  margin-top: 4px;
+  font-size: 0.85rem;
+}
+.container code {
+  color: var(--danger);
+  background: #fce7f3;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.container pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 14px;
+  border-radius: 10px;
+  border-left: 5px solid var(--secondary);
+  overflow: auto;
+}
+`.trim()
+
+/** Legacy CSS for notes generated before the revision template. */
+const LEGACY_STUDY_NOTES_CSS = `
+html, body {
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: 'Noto Sans Devanagari', system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.75;
+  color: #1e293b;
+  background: #f8fafc;
+}
+.study-notes {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 32px clamp(16px, 4vw, 48px) 64px;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+.study-notes h1 {
+  font-size: 2rem;
+  line-height: 1.25;
+  margin: 0 0 16px;
+  color: #1e3a8a;
+}
+.study-notes h2 {
+  font-size: 1.5rem;
+  line-height: 1.3;
+  margin: 28px 0 12px;
+  color: #1e3a8a;
+  border-bottom: 2px solid #bfdbfe;
+  padding-bottom: 6px;
+}
+.study-notes h3 {
+  font-size: 1.2rem;
+  line-height: 1.35;
+  margin: 20px 0 8px;
+  color: #059669;
+}
+.study-notes table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+}
+.study-notes th {
+  background: #dbeafe;
+  color: #1e3a8a;
+  border: 1.5px solid #93c5fd;
+  padding: 10px 12px;
+  text-align: left;
+}
+.study-notes td {
+  border: 1.5px solid #bfdbfe;
+  padding: 10px 12px;
+}
+`.trim()
+
 const A4_NOTEBOOK_CSS = `
 html, body {
   margin: 0;
@@ -330,8 +566,18 @@ const CUSTOM_HTML_VIEW_CSS = `
 }
 `.trim()
 
-/** CSS pixel width of one A4 page at 96dpi. */
+/** Legacy A4 notebook page width at 96dpi — only for `.notebook-page` HTML. */
 export const NOTEBOOK_A4_WIDTH_PX = (210 * 96) / 25.4
+
+/** True when HTML uses the revision notes container layout. */
+export function htmlUsesRevisionNotes(html: string) {
+  return /\bclass=["'][^"']*\bcontainer\b/.test(html)
+}
+
+/** True when HTML uses the legacy generated study-notes layout. */
+export function htmlUsesStudyNotes(html: string) {
+  return /\bstudy-notes\b/.test(html)
+}
 
 /** True when HTML uses the app's A4 notebook page layout. */
 export function htmlUsesNotebookPages(html: string) {
@@ -340,6 +586,11 @@ export function htmlUsesNotebookPages(html: string) {
 
 function stripInjectedNotebookStyles(html: string) {
   return html
+    .replace(
+      /<style id=["']revision-notes-styles["']>[\s\S]*?<\/style>\s*/gi,
+      '',
+    )
+    .replace(/<style id=["']study-notes-styles["']>[\s\S]*?<\/style>\s*/gi, '')
     .replace(/<style id=["']a4-notebook-styles["']>[\s\S]*?<\/style>\s*/gi, '')
     .replace(/<style id=["']notebook-pdf-view["']>[\s\S]*?<\/style>\s*/gi, '')
     .replace(/<style id=["']notebook-zoom-var["']>[\s\S]*?<\/style>\s*/gi, '')
@@ -377,16 +628,39 @@ ${html}
 }
 
 /**
- * Guarantees A4 page sizing and colorful notebook styles even if the LLM
- * returns incomplete CSS.
+ * Injects server-side CSS for generated HTML when the LLM returns structure only.
+ * Supports `.container` (revision), legacy `.study-notes`, and `.notebook-page` layouts.
  */
-export function ensureA4NotebookHtml(html: string) {
+export function ensureGeneratedHtml(html: string) {
   const trimmed = html.trim()
-  if (!trimmed || !htmlUsesNotebookPages(trimmed)) {
+  if (!trimmed) {
     return trimmed
   }
 
-  return injectHeadStyle(trimmed, 'a4-notebook-styles', A4_NOTEBOOK_CSS)
+  if (htmlUsesRevisionNotes(trimmed)) {
+    return injectHeadStyle(trimmed, 'revision-notes-styles', REVISION_NOTES_CSS)
+  }
+
+  if (htmlUsesStudyNotes(trimmed)) {
+    return injectHeadStyle(
+      trimmed,
+      'study-notes-styles',
+      LEGACY_STUDY_NOTES_CSS,
+    )
+  }
+
+  if (htmlUsesNotebookPages(trimmed)) {
+    return injectHeadStyle(trimmed, 'a4-notebook-styles', A4_NOTEBOOK_CSS)
+  }
+
+  return trimmed
+}
+
+/**
+ * @deprecated Use ensureGeneratedHtml. Kept for backward compatibility.
+ */
+export function ensureA4NotebookHtml(html: string) {
+  return ensureGeneratedHtml(html)
 }
 
 export type PrepareNotebookForViewOptions = {
@@ -409,10 +683,10 @@ export function prepareNotebookForView(
   }
 
   const usesNotebookPages = htmlUsesNotebookPages(cleaned)
-  const withA4 = usesNotebookPages ? ensureA4NotebookHtml(cleaned) : cleaned
+  const withStyles = ensureGeneratedHtml(cleaned)
 
   const withPdfChrome = injectHeadStyle(
-    withA4,
+    withStyles,
     'notebook-pdf-view',
     usesNotebookPages ? NOTEBOOK_PDF_VIEW_CSS : CUSTOM_HTML_VIEW_CSS,
   )

@@ -238,7 +238,7 @@ export async function processNote(noteId: string, mcqCount: number) {
     )
     const fullMarkdown = mergeNotesWithQuiz(structuredNotes, videoQuiz)
     const [notebookHtml, title] = await Promise.all([
-      renderNotebookHtml(fullMarkdown),
+      renderNotebookHtml(fullMarkdown, mcqCount),
       generateNoteTitle(structuredNotes),
     ])
 

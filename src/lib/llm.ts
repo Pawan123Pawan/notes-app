@@ -8,7 +8,7 @@ import {
   videoQuizPrompt,
   type VideoQuizBatch,
 } from '@/lib/llm/prompts'
-import { ensureA4NotebookHtml } from '@/lib/notebook-html'
+import { ensureGeneratedHtml } from '@/lib/notebook-html'
 
 type CompleteOptions = {
   temperature?: number
@@ -75,7 +75,7 @@ function countQuizQuestions(markdown: string) {
 
 function buildQuizPlan(totalMcqCount: number): VideoQuizBatch[] {
   const totalBatches = Math.ceil(totalMcqCount / QUIZ_BATCH_SIZE)
-  const padWidth = Math.max(3, String(totalMcqCount).length)
+  const padWidth = totalMcqCount >= 1000 ? String(totalMcqCount).length : 0
   const batches: VideoQuizBatch[] = []
 
   for (let batchIndex = 1; batchIndex <= totalBatches; batchIndex++) {
@@ -167,12 +167,15 @@ export async function structureTranscript(rawTranscript: string) {
   })
 }
 
-export async function renderNotebookHtml(structuredNotes: string) {
-  const html = await complete(notebookHtmlPrompt(structuredNotes), {
+export async function renderNotebookHtml(
+  structuredNotes: string,
+  mcqCount: number,
+) {
+  const html = await complete(notebookHtmlPrompt(structuredNotes, mcqCount), {
     temperature: 0.45,
     maxTokens: 65_536,
   })
-  return ensureA4NotebookHtml(stripCodeFences(html))
+  return ensureGeneratedHtml(stripCodeFences(html))
 }
 
 export async function generateNoteTitle(structuredNotes: string) {

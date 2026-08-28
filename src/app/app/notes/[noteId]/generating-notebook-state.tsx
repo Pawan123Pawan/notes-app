@@ -13,24 +13,24 @@ const stages = [
     dot: 'bg-sky-500',
   },
   {
-    label: 'Writing bilingual notes',
+    label: 'Writing revision cards',
     tone: 'bg-amber-500/15 text-amber-800 dark:text-amber-300',
     dot: 'bg-amber-500',
   },
   {
-    label: 'Building video MCQ quiz',
+    label: 'Building synthesis table',
+    tone: 'bg-teal-500/15 text-teal-800 dark:text-teal-300',
+    dot: 'bg-teal-500',
+  },
+  {
+    label: 'Generating MCQ quiz',
     tone: 'bg-rose-500/15 text-rose-800 dark:text-rose-300',
     dot: 'bg-rose-500',
   },
   {
-    label: 'Coloring notebook pages',
+    label: 'Rendering HTML document',
     tone: 'bg-violet-500/15 text-violet-700 dark:text-violet-300',
     dot: 'bg-violet-500',
-  },
-  {
-    label: 'Finishing A4 layout',
-    tone: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300',
-    dot: 'bg-emerald-500',
   },
 ] as const
 
@@ -81,12 +81,12 @@ export function GeneratingNotebookState() {
         <div className="min-w-0 flex-1 space-y-4 text-center sm:text-left">
           <div className="space-y-1.5">
             <p className="text-lg font-semibold tracking-tight">
-              Creating your colorful notebook
+              Creating your revision notes
             </p>
             <p className="text-muted-foreground text-sm text-pretty">
-              Generating bilingual notes, video Q&amp;A, MCQ quiz, and vivid A4
-              notebook pages. This can take several minutes for richer content
-              and better quality.
+              Generating bilingual revision cards, a summary table, and MCQs.
+              This can take several minutes for richer content and better
+              quality.
             </p>
           </div>
 

@@ -1,178 +1,94 @@
-export const structureNotesPrompt = (rawTranscript: string) => `# ROLE
+export const structureNotesPrompt = (rawTranscript: string) => `# TASK
 
-You are an expert academic note creator and educational content writer specializing in bilingual Hindi–English study material.
+Transform this transcript into detailed, revision-ready bilingual study notes.
 
-Your task is to transform the given transcript into attractive, detailed, and structured professional study notes.
-
-Take as much time as needed.
-Accuracy is more important than speed.
+Take as much time as needed. Accuracy is more important than speed.
 
 ---
 
-# LANGUAGE RULES (STRICT)
+# LANGUAGE (STRICT — BILINGUAL)
 
-• Notes must be BILINGUAL: Hindi (Devanagari) primary + English parallel lines.
-• Every heading, subheading, definition, bullet, and summary must appear in BOTH languages.
-• Format headings as: ## हिंदी शीर्षक / English Heading
-• Every important academic keyword must use: **हिंदी (English)**
-• Examples:
-  - **कोशिका (Cell)**
-  - **प्रकाश संश्लेषण (Photosynthesis)**
-  - **लोकतंत्र (Democracy)**
+• Every section must be bilingual: Hindi (Devanagari) + English.
+• Headings format: ## हिंदी शीर्षक / English Heading
+• Keywords format: **हिंदी (English)**
+• Examples: **कोशिका (Cell)**, **प्रकाश संश्लेषण (Photosynthesis)**
 
-Do NOT translate:
-- formulas
-- code
-- mathematical notation
-- variable names
-- URLs
-- file names
-
-Proper nouns remain unchanged.
+Do NOT translate: formulas, code, math notation, variable names, URLs, file names.
+Proper nouns stay unchanged.
 
 ---
 
 # CONTENT RULES
 
-• Cover every concept mentioned in the transcript.
-• Never omit topics.
-• Remove only filler words, repeated phrases, and verbal pauses.
-• Preserve factual information.
+• Cover every concept from the transcript — never omit topics.
+• Remove only filler words and verbal pauses.
 • Never invent or hallucinate facts.
-• If something is unclear, write exactly:
-
-HI: यह जानकारी ट्रांसक्रिप्ट में स्पष्ट नहीं है।
-EN: This information is not clear in the transcript.
-
-If the transcript is poorly organized:
-- reorganize logically
-- preserve every fact
-
-Do NOT summarize aggressively.
-Create COMPLETE notes suitable for long-term revision.
-
-Do NOT include MCQ quiz questions here — those are generated separately.
+• If unclear, write:
+  HI: यह जानकारी ट्रांसक्रिप्ट में स्पष्ट नहीं है।
+  EN: This information is not clear in the transcript.
+• Reorganize poorly ordered transcripts logically while preserving every fact.
+• Create COMPLETE revision-ready notes — do not over-summarize.
+• Do NOT include MCQ quiz questions here (generated separately).
 
 ---
 
-# REQUIRED SECTIONS (IN ORDER)
-
-Use Markdown only. Follow this exact structure:
+# REQUIRED STRUCTURE (MARKDOWN ONLY — IN ORDER)
 
 # शीर्षक / Title
 
-## परिचय / Introduction
-Brief bilingual overview of the topic.
+## Part 1: [Topic Name in Hindi] ([English Topic Name])
 
-## मुख्य अवधारणाएँ / Key Concepts
-Use ### subtopics for each major concept.
-Include definitions, explanations, and bullet lists.
+Detailed topic cards. Use ### for each subtopic or concept block.
 
-### परिभाषा / Definition
-Whenever a definition exists, provide Hindi + English.
+For each card-ready block, use bilingual fact pairs with badge-style labels:
 
-## महत्वपूर्ण बिंदु / Important Points
-Bulleted list of critical facts, rules, and formulas.
+### [Subtopic Title — Hindi / English]
 
-## उदाहरण / Examples
-Include transcript examples. If a concept has no example, add ONE short clarification example only — no new facts.
+**Label (Badge):** Hindi fact line.
+EN: English fact line.
 
-Include whenever relevant:
+**Another Label:** Hindi fact.
+EN: English fact.
+
+Use these badge label styles when relevant:
+- **शुरुआत / Start:** dates, launch info
+- **मुख्य फोकस / Main Focus:** primary objective
+- **मॉडल / Model:** frameworks, theories
+- **प्रमुख घटनाएं / Key Events:** milestones
+- **वृद्धि दर / Growth Rate:** targets vs achieved
+- **विशेष बिंदु / Special Note:** warnings, exceptions
+
+Mark highlight/special topics (reforms, holidays, crises) with a note: [ACCENT CARD]
+
+Include when relevant within Part 1:
 • Numbered steps
-• Tables (for comparisons)
-• Mermaid diagrams when processes or relationships exist
-• LaTeX for formulas
+• LaTeX for formulas ($inline$ or $$block$$)
+• Mermaid diagrams for processes/relationships
 
 ---
 
-# VIDEO Q&A SECTION (MANDATORY)
+## Part 2: [Synthesis Title in Hindi] ([English Synthesis Title])
 
-## वीडियो प्रश्नोत्तर / Video Q&A
+A markdown comparison/synthesis table covering key facts from the transcript.
 
-Create 10–20 question–answer pairs based ONLY on the transcript.
+| विषय / Topic | प्रमुख तथ्य (Hindi) | Key Facts (English) |
+|---|---|---|
+| **Topic** | Hindi facts | English facts |
 
-Each pair must use this exact format:
-
-### Q1
-**QuestionHI:** ...
-**QuestionEN:** ...
-**AnswerHI:** ...
-**AnswerEN:** ...
-**ExplanationHI:** ...
-**ExplanationEN:** ...
-
-Number sequentially: Q1, Q2, Q3 …
-
----
-
-# EMPHASIS
-
-Bold:
-- definitions
-- formulas
-- keywords
-- important dates
-- names
-- laws
-- theories
-
-Example:
-**ऊर्जा संरक्षण का नियम (Law of Conservation of Energy)**
-
----
-
-# TIP BOXES
-
-Important tricks:
-> **टिप / Tip:**
-> HI: ...
-> EN: ...
-
-Warnings:
-> **सावधानी / Warning:**
-> HI: ...
-> EN: ...
-
----
-
-# DIAGRAMS
-
-Whenever relationships or processes are described, generate Mermaid diagrams.
-
-\`\`\`mermaid
-graph TD
-A[ऊर्जा (Energy)] --> B[कार्य (Work)]
-\`\`\`
-
-Node labels should remain bilingual.
-
----
-
-# END SECTIONS
-
-Always end with:
-
-## मुख्य बिंदु / Key Takeaways
-5–10 concise bilingual bullets.
-
-## त्वरित पुनरावृत्ति / Quick Revision
-Include:
-- formulas
-- definitions
-- keywords
-- dates
-- important facts
+Include every major topic, event, date, name, and fact worth quick revision.
+Add as many rows as needed — do not leave out transcript content.
 
 ---
 
 # OUTPUT RULES
 
 Return ONLY markdown.
-No introduction.
-No explanation.
+No introduction. No explanation.
 No code fences except Mermaid.
 No HTML.
 No MCQ quiz questions.
+No Video Q&A section.
+No separate Key Takeaways or Quick Revision sections (content belongs in Part 1 and Part 2).
 
 ---
 
@@ -191,7 +107,9 @@ export type VideoQuizBatch = {
 }
 
 function formatQuizQuestionNumber(questionNumber: number, padWidth: number) {
-  return `Q${String(questionNumber).padStart(padWidth, '0')}`
+  return padWidth > 0
+    ? `Q${String(questionNumber).padStart(padWidth, '0')}`
+    : `Q${questionNumber}`
 }
 
 export const videoQuizPrompt = (
@@ -210,12 +128,12 @@ export const videoQuizPrompt = (
     batch.padWidth,
   )
 
-  return `# ROLE
+  return `# TASK
 
-You are an expert exam question writer creating bilingual Hindi–English MCQs for video study material.
+Create bilingual Hindi–English MCQs for study material.
 
-The user requested EXACTLY ${batch.totalMcqCount} MCQs total across all batches.
-Generate EXACTLY ${batchCount} multiple-choice questions for this batch.
+The user requested EXACTLY ${batch.totalMcqCount} MCQs in total.
+This batch must contain EXACTLY ${batchCount} questions.
 Question numbers: ${startLabel} through ${endLabel}.
 Batch ${batch.batchIndex} of ${batch.totalBatches}.
 
@@ -223,21 +141,20 @@ Batch ${batch.batchIndex} of ${batch.totalBatches}.
 
 # RULES (STRICT)
 
-• You MUST generate exactly ${batch.totalMcqCount} MCQs total across all batches.
+• You MUST produce exactly ${batch.totalMcqCount} MCQs across all batches combined.
+• This batch: exactly ${batchCount} questions — no more, no less.
 • Base every question ONLY on facts in the transcript and study notes preview.
 • Never invent or hallucinate facts.
-• Each question has exactly 4 options: A, B, C, D.
-• Exactly one correct answer per question.
-• All text must be bilingual (Hindi Devanagari + English).
+• Each question: exactly 4 options (A, B, C, D), exactly one correct answer.
+• All text bilingual: Hindi (Devanagari) + English.
 • Do NOT repeat questions from other batches.
-• Output EXACTLY ${batchCount} questions in this batch — no more, no less.
 
 ---
 
-# OUTPUT FORMAT (STRICT)
+# OUTPUT FORMAT
 
-${batch.batchIndex === 1 ? `## वीडियो क्विज़ / Video Quiz (${batch.totalMcqCount} MCQs)\n` : ''}
-For each question use this exact schema:
+${batch.batchIndex === 1 ? `## Part 3: MCQ Quiz (${batch.totalMcqCount} MCQs)\n` : ''}
+For each question:
 
 ### ${exampleLabel}
 **HI:** [Hindi question]
@@ -247,20 +164,18 @@ For each question use this exact schema:
 - C) [Hindi] / [English]
 - D) [Hindi] / [English]
 **Correct:** [A|B|C|D]
-**ExplainHI:** [Hindi explanation of why the answer is correct]
-**ExplainEN:** [English explanation of why the answer is correct]
+**CorrectText:** [Full correct option text, e.g. B (Harrod-Domar Model)]
+**ExplainHI:** [Hindi — why this answer is correct]
+**ExplainEN:** [English — why this answer is correct]
 
-Continue numbering sequentially through ${endLabel}.
+Continue through ${endLabel}.
 
 ---
 
 # OUTPUT RULES
 
 Return ONLY markdown.
-No introduction.
-No explanation.
-No HTML.
-No code fences.
+No introduction. No explanation. No HTML. No code fences.
 
 ---
 
@@ -276,19 +191,18 @@ ${rawTranscript}
 `
 }
 
-export const notebookHtmlPrompt = (structuredNotes: string) => `# ROLE
+export const notebookHtmlPrompt = (
+  structuredNotes: string,
+  mcqCount: number,
+) => `# TASK
 
-You are an expert HTML notebook designer.
+Transform the provided Markdown study notes into a complete HTML document.
 
-Convert the provided Markdown study notes (including Video Q&A and Video Quiz MCQs) into a beautiful spiral notebook HTML document.
+The notes include Part 1 (detailed cards), Part 2 (synthesis table), and Part 3 (exactly ${mcqCount} MCQs).
 
-Take as much time as needed.
-Accuracy is more important than speed.
+Take as much time as needed. Accuracy is more important than speed.
 
-Never summarize.
-Never omit content.
-Never rewrite text.
-Render EVERYTHING.
+Never summarize. Never omit content. Never rewrite text. Render EVERYTHING.
 
 ---
 
@@ -296,163 +210,85 @@ Render EVERYTHING.
 
 Return ONLY a complete valid HTML document.
 
+Do NOT include any <style> tags or CSS — styles are injected server-side.
 Do NOT return markdown.
 Do NOT explain anything.
 Do NOT wrap in code fences.
+Do NOT use external stylesheets.
 
-The document must begin with:
+Begin with <!DOCTYPE html> and include <html lang="hi">, <head> (meta charset + viewport only), <body>.
 
-<!DOCTYPE html>
+Put all content inside: <div class="container">...</div>
 
-and include:
-- <html lang="hi">
-- <head> (with CSS and Google Fonts)
-- <body>
-- </html>
-
-Each page wrapped in: <div class="notebook-page">...</div>
-Page footer: <div class="page-number">Page N</div>
+Do NOT use spiral notebook layout, A4 page divs, ruled lines, red margins, or page numbers.
 
 ---
 
-# COLOR PALETTE (USE ALL 6)
+# PART 1 — DETAILED CARDS
 
-Define and use these colors throughout:
-- Navy: #1e3a8a
-- Violet: #7c3aed
-- Emerald: #059669
-- Amber: #b45309
-- Rose: #be185d
-- Cyan: #0891b2
+Render each ### subtopic as a card block.
 
-Apply to headings, tables, tip boxes, list markers, and quiz panels.
-
----
-
-# CONTENT RULES
-
-Render every character from the study notes.
-
-Preserve:
-- Hindi (Devanagari)
-- English text
-- bold, italic, headings, tables, lists, blockquotes
-- Mermaid code blocks, formulas, code blocks
-
-Never rewrite. Never translate. Never shorten. Do NOT remove content.
-
----
-
-# NOTEBOOK STYLE
-
-• Spiral notebook appearance
-• A4 pages (210mm × 297mm)
-• Ruled paper lines
-• Red left margin
-• Page numbers (centered footer)
-• Google Fonts: Noto Sans Devanagari and Caveat
-• Colorful headings with marker-style highlights on bold keywords
-• Colored tables with alternating rows
-• Colored tip / warning blockquote boxes
-
----
-
-# VIDEO Q&A HTML
-
-Render each Q&A pair as:
-
-<div class="qa-item">
-  <div class="qa-question">
-    <p class="qa-label">प्रश्न / Question</p>
-    <p class="qa-hi">...</p>
-    <p class="qa-en">...</p>
-  </div>
-  <div class="qa-answer">
-    <p class="qa-label">उत्तर / Answer</p>
-    <p class="qa-hi">...</p>
-    <p class="qa-en">...</p>
-    <p class="qa-explain-hi"><strong>व्याख्या:</strong> ...</p>
-    <p class="qa-explain-en"><strong>Explanation:</strong> ...</p>
+Normal card:
+<div class="card">
+  <h3>Subtopic Title</h3>
+  <div class="bilingual-block">
+    <p class="hi-text"><span class="badge">Label</span> Hindi fact.</p>
+    <p class="en-text">English fact.</p>
+    <p class="hi-text"><span class="badge badge-accent">Label</span> Hindi fact.</p>
+    <p class="en-text">English fact.</p>
   </div>
 </div>
 
+For [ACCENT CARD] topics or special highlights, use class="card card-accent".
+For warnings/exceptions use <span class="badge badge-danger">Label</span>.
+
+Each Hindi fact → <p class="hi-text"> with optional badge span.
+Each English fact → <p class="en-text"> immediately after its Hindi pair.
+
 ---
 
-# VIDEO QUIZ HTML (CRITICAL LAYOUT)
+# PART 2 — SYNTHESIS TABLE
 
-Render EVERY MCQ from the Video Quiz section using a TWO-COLUMN grid — answer panel on the RIGHT, NOT at the bottom.
+Render the markdown table as a styled <table> with <thead> and <tbody>.
+Preserve all rows. Use <strong> for topic names in the first column.
 
-Required structure for each question:
+---
 
-<div class="quiz-item">
-  <div class="quiz-main">
-    <p class="quiz-number">Q001</p>
-    <p class="quiz-q-hi">...</p>
-    <p class="quiz-q-en">...</p>
-    <div class="quiz-options">
-      <label class="quiz-option"><input type="radio" name="q001" value="A"> A) ...</label>
-      <label class="quiz-option"><input type="radio" name="q001" value="B"> B) ...</label>
-      <label class="quiz-option"><input type="radio" name="q001" value="C"> C) ...</label>
-      <label class="quiz-option"><input type="radio" name="q001" value="D"> D) ...</label>
+# PART 3 — MCQs (${mcqCount} questions — CRITICAL)
+
+Render ALL ${mcqCount} MCQs in a single-column layout. NO radio buttons. NO side panels.
+
+<div class="mcq-container">
+  <div class="mcq-item">
+    <div class="mcq-header">Q1. Hindi question / English question</div>
+    <ul class="mcq-options">
+      <li>A) Option text</li>
+      <li>B) Option text</li>
+      <li>C) Option text</li>
+      <li>D) Option text</li>
+    </ul>
+    <div class="mcq-answer-side">
+      <span class="mcq-ans-label">Correct Option:</span> <strong>B (Full answer text)</strong>
+      <div class="mcq-exp">व्याख्या: Hindi explanation. / English explanation.</div>
     </div>
   </div>
-  <aside class="quiz-answer-panel">
-    <p class="quiz-correct-label">सही उत्तर / Correct Answer</p>
-    <p class="quiz-correct-letter">B</p>
-    <p class="quiz-explain-hi">...</p>
-    <p class="quiz-explain-en">...</p>
-  </aside>
 </div>
 
-CSS for quiz layout (include in <head>):
-
-.quiz-item {
-  display: grid;
-  grid-template-columns: 1fr 280px;
-  gap: 16px;
-  align-items: start;
-  margin: 16px 0;
-  padding: 12px;
-  border: 1.5px solid #bfdbfe;
-  border-radius: 10px;
-}
-.quiz-main { min-width: 0; }
-.quiz-answer-panel {
-  background: linear-gradient(135deg, #ede9fe, #ecfeff);
-  border: 2px solid #7c3aed;
-  border-radius: 10px;
-  padding: 12px;
-}
-.quiz-option {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 6px 8px;
-  margin: 4px 0;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.quiz-correct-letter {
-  font-size: 28px;
-  font-weight: 700;
-  color: #059669;
-  text-align: center;
-}
-
-FORBIDDEN in quiz HTML:
+FORBIDDEN in MCQ HTML:
+- Radio buttons, checkboxes, or interactive inputs
+- Two-column grid layouts for questions
+- Side answer panels (answers go BELOW options in .mcq-answer-side)
 - Toggle buttons, "Show answer", accordion, or show/hide controls
 - Highlighting or bolding the correct option in the option list
-- Placing the correct answer block BELOW the options (must be on the RIGHT side)
-- All four options must look identical in styling
+- Embedded <style> tags or inline CSS
 
 ---
 
-# PAGINATION
+# HEADINGS
 
-Split content across multiple A4 pages.
-No text may overflow a page.
-If content does not fit, create another page.
-Never shrink text to fit.
+- Document title → <h1> inside .container
+- Part 1, Part 2, Part 3 section headings → <h2>
+- Card subtopic titles → <h3> inside .card
 
 ---
 
@@ -461,19 +297,16 @@ Never shrink text to fit.
 ${structuredNotes}
 `
 
-export const noteTitlePrompt = (
-  structuredNotesPreview: string,
-) => `Generate ONE notebook title for these study notes.
+export const noteTitlePrompt = (structuredNotesPreview: string) => `# TASK
+
+Generate ONE notebook cover title for these bilingual study notes.
 
 Requirements:
-
-- Bilingual format: Hindi (Devanagari) with English in parentheses
+- Bilingual: Hindi (Devanagari) with English in parentheses
 - Example: कोशिका विज्ञान (Cell Biology)
 - Maximum 60 characters
-- Clear and descriptive
-- Suitable for a notebook cover
-- No quotation marks
-- No punctuation at the end
+- Clear, descriptive, suitable for a notebook cover
+- No quotation marks, no trailing punctuation
 - Return ONLY the title text
 
 Study Notes:
