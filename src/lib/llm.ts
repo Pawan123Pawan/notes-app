@@ -1,6 +1,7 @@
 import OpenAI from 'openai'
 
 import { getLlmApiKey, getLlmBaseUrl, getLlmModel } from '@/lib/env'
+import { isLlmRateLimitError, toLlmError } from '@/lib/llm-errors'
 import {
   noteTitlePrompt,
   notebookHtmlPrompt,
@@ -16,6 +17,27 @@ type CompleteOptions = {
 }
 
 const QUIZ_BATCH_SIZE = 25
+const QUIZ_BATCH_DELAY_MS = 750
+const LLM_MAX_RETRIES = 4
+const LLM_INITIAL_RETRY_DELAY_MS = 2_000
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function isRetryableLlmError(error: unknown) {
+  if (isLlmRateLimitError(error)) {
+    return true
+  }
+
+  if (!error || typeof error !== 'object' || !('status' in error)) {
+    return false
+  }
+
+  const status = error.status
+
+  return status === 503 || status === 500
+}
 
 function createLlmClient() {
   const apiKey = getLlmApiKey()
@@ -58,14 +80,30 @@ async function complete(prompt: string, options: CompleteOptions = {}) {
   const temperature = options.temperature ?? 0.35
   const maxTokens = options.maxTokens ?? 16_384
 
-  const completion = await client.chat.completions.create({
-    model,
-    temperature,
-    max_tokens: maxTokens,
-    messages: [{ role: 'user', content: prompt }],
-  })
+  for (let attempt = 0; attempt <= LLM_MAX_RETRIES; attempt++) {
+    try {
+      const completion = await client.chat.completions.create({
+        model,
+        temperature,
+        max_tokens: maxTokens,
+        messages: [{ role: 'user', content: prompt }],
+      })
 
-  return extractAssistantText(completion.choices[0]?.message?.content)
+      return extractAssistantText(completion.choices[0]?.message?.content)
+    } catch (error) {
+      const shouldRetry =
+        attempt < LLM_MAX_RETRIES && isRetryableLlmError(error)
+
+      if (!shouldRetry) {
+        throw toLlmError(error)
+      }
+
+      const delayMs = LLM_INITIAL_RETRY_DELAY_MS * 2 ** attempt
+      await sleep(delayMs)
+    }
+  }
+
+  throw new Error('LLM request failed after retries')
 }
 
 function countQuizQuestions(markdown: string) {
@@ -139,7 +177,11 @@ export async function generateVideoQuiz(
   const batches = buildQuizPlan(mcqCount)
   const batchResults: string[] = []
 
-  for (const batch of batches) {
+  for (const [index, batch] of batches.entries()) {
+    if (index > 0) {
+      await sleep(QUIZ_BATCH_DELAY_MS)
+    }
+
     const batchMarkdown = await generateVideoQuizBatch(
       rawTranscript,
       preview,

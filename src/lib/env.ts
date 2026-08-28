@@ -64,6 +64,8 @@ export function getAppUrl() {
 const defaultGeminiOpenAiCompatBaseUrl =
   'https://generativelanguage.googleapis.com/v1beta/openai'
 
+const defaultAiGatewayBaseUrl = 'https://ai-gateway.vercel.sh/v1'
+
 const defaultOpenAiModel = 'gpt-4o-mini'
 
 /**
@@ -83,7 +85,8 @@ export function getLlmApiKey() {
  * Base URL for the OpenAI SDK.
  * - OPENAI_BASE_URL / AI_GATEWAY_BASE_URL when set
  * - omitted (SDK default) when using OPENAI_API_KEY
- * - Gemini OpenAI-compat URL when using a Gemini/gateway key without a base URL
+ * - Vercel AI Gateway when using AI_GATEWAY_API_KEY without a base URL
+ * - Gemini OpenAI-compat URL when using GEMINI_API_KEY without a base URL
  */
 export function getLlmBaseUrl() {
   if (env.OPENAI_BASE_URL) {
@@ -98,7 +101,11 @@ export function getLlmBaseUrl() {
     return undefined
   }
 
-  if (env.AI_GATEWAY_API_KEY || env.GEMINI_API_KEY) {
+  if (env.AI_GATEWAY_API_KEY) {
+    return defaultAiGatewayBaseUrl
+  }
+
+  if (env.GEMINI_API_KEY) {
     return defaultGeminiOpenAiCompatBaseUrl
   }
 

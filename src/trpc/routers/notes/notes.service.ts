@@ -12,6 +12,7 @@ import {
   renderNotebookHtml,
   structureTranscript,
 } from '@/lib/llm'
+import { isLlmRateLimitError, toLlmError } from '@/lib/llm-errors'
 import { getErrorMessage } from '@/lib/utils'
 import { fetchYoutubeTranscript } from '@/lib/youtube'
 import { resolveFolderIdForNote } from '@/trpc/routers/folders/folders.service'
@@ -244,7 +245,8 @@ export async function processNote(noteId: string, mcqCount: number) {
       },
     )
   } catch (error) {
-    const message = getErrorMessage(error, 'Note processing failed')
+    const llmError = toLlmError(error)
+    const message = getErrorMessage(llmError, 'Note processing failed')
 
     await Note.updateOne(
       { _id: noteId },
@@ -254,7 +256,17 @@ export async function processNote(noteId: string, mcqCount: number) {
       },
     )
 
-    throw error
+    if (isLlmRateLimitError(llmError)) {
+      throw new TRPCError({
+        code: 'TOO_MANY_REQUESTS',
+        message,
+      })
+    }
+
+    throw new TRPCError({
+      code: 'INTERNAL_SERVER_ERROR',
+      message,
+    })
   }
 }
 
