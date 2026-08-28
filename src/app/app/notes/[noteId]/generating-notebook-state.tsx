@@ -13,9 +13,14 @@ const stages = [
     dot: 'bg-sky-500',
   },
   {
-    label: 'Writing Hindi notes',
+    label: 'Writing bilingual notes',
     tone: 'bg-amber-500/15 text-amber-800 dark:text-amber-300',
     dot: 'bg-amber-500',
+  },
+  {
+    label: 'Building 100 MCQ video quiz',
+    tone: 'bg-rose-500/15 text-rose-800 dark:text-rose-300',
+    dot: 'bg-rose-500',
   },
   {
     label: 'Coloring notebook pages',
@@ -79,8 +84,9 @@ export function GeneratingNotebookState() {
               Creating your colorful notebook
             </p>
             <p className="text-muted-foreground text-sm text-pretty">
-              Generating detailed Hindi notes and vivid A4 handwritten pages.
-              This can take a few minutes for richer color and better quality.
+              Generating bilingual notes, video Q&amp;A, 100 MCQ quiz, and vivid
+              A4 notebook pages. This can take several minutes for richer
+              content and better quality.
             </p>
           </div>
 

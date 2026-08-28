@@ -139,6 +139,123 @@ html, body {
   border-top: 2px dashed #f59e0b;
   margin: 16px 0;
 }
+.qa-item {
+  margin: 14px 0;
+  padding: 12px 14px;
+  border: 1.5px solid #93c5fd;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+}
+.qa-label {
+  font-weight: 700;
+  color: #1e3a8a;
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+.qa-hi {
+  margin: 0 0 4px;
+  color: #1e3a8a;
+}
+.qa-en {
+  margin: 0 0 8px;
+  color: #0891b2;
+  font-style: italic;
+}
+.qa-answer {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1.5px dashed #b45309;
+}
+.qa-explain-hi,
+.qa-explain-en {
+  margin: 6px 0 0;
+  font-size: 16px;
+  color: #4c1d95;
+}
+.quiz-item {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 16px;
+  align-items: start;
+  margin: 16px 0;
+  padding: 12px;
+  border: 1.5px solid #bfdbfe;
+  border-radius: 10px;
+  background: #fffef8;
+}
+.quiz-main {
+  min-width: 0;
+}
+.quiz-number {
+  font-weight: 700;
+  color: #7c3aed;
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+.quiz-q-hi {
+  margin: 0 0 4px;
+  color: #1e3a8a;
+  font-weight: 600;
+}
+.quiz-q-en {
+  margin: 0 0 10px;
+  color: #0891b2;
+  font-style: italic;
+}
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.quiz-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  margin: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  color: #334155;
+  background: transparent;
+}
+.quiz-option input[type="radio"] {
+  margin-top: 4px;
+  accent-color: #7c3aed;
+  flex-shrink: 0;
+}
+.quiz-answer-panel {
+  background: linear-gradient(135deg, #ede9fe, #ecfeff);
+  border: 2px solid #7c3aed;
+  border-radius: 10px;
+  padding: 12px;
+  min-width: 0;
+}
+.quiz-correct-label {
+  font-weight: 700;
+  color: #be185d;
+  margin: 0 0 4px;
+  font-size: 14px;
+  text-align: center;
+}
+.quiz-correct-letter {
+  font-size: 28px;
+  font-weight: 700;
+  color: #059669;
+  text-align: center;
+  margin: 0 0 8px;
+}
+.quiz-explain-hi {
+  margin: 0 0 6px;
+  color: #1e3a8a;
+  font-size: 15px;
+}
+.quiz-explain-en {
+  margin: 0;
+  color: #0891b2;
+  font-size: 14px;
+  font-style: italic;
+}
 .page-number {
   position: absolute;
   bottom: 10mm;
@@ -164,6 +281,10 @@ html, body {
     margin: 0 !important;
     box-shadow: none !important;
     page-break-after: always;
+  }
+  .quiz-item {
+    grid-template-columns: 1fr 240px;
+    gap: 12px;
   }
 }
 `.trim()

@@ -7,6 +7,8 @@ import type { NoteSourceType, NoteStatus } from '@/db/schema/note.constants'
 import { Subject } from '@/db/schema/subject'
 import {
   generateNoteTitle,
+  generateVideoQuiz,
+  mergeNotesWithQuiz,
   renderNotebookHtml,
   structureTranscript,
 } from '@/lib/llm'
@@ -229,15 +231,20 @@ export async function processNote(noteId: string) {
 
   try {
     const structuredNotes = await structureTranscript(note.rawTranscript)
+    const videoQuiz = await generateVideoQuiz(
+      note.rawTranscript,
+      structuredNotes,
+    )
+    const fullMarkdown = mergeNotesWithQuiz(structuredNotes, videoQuiz)
     const [notebookHtml, title] = await Promise.all([
-      renderNotebookHtml(structuredNotes),
+      renderNotebookHtml(fullMarkdown),
       generateNoteTitle(structuredNotes),
     ])
 
     await Note.updateOne(
       { _id: noteId },
       {
-        structuredNotes,
+        structuredNotes: fullMarkdown,
         notebookHtml,
         title: title.trim() || note.title,
         status: 'completed',
