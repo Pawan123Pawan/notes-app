@@ -9,7 +9,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import type { NoteStatus } from '@/db/schema/note.constants'
 import { useTRPC } from '@/trpc/react'
 
-import { GeneratingNotebookState } from './generating-notebook-state'
 import { NotebookPdfViewer } from './notebook-pdf-viewer'
 
 export type NoteDetailViewProps = {
@@ -80,9 +79,11 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {isProcessingStatus(note.status) ? (
-        <div className="flex flex-col gap-4 p-4">
-          <GeneratingNotebookState />
-          <div className="flex justify-center">
+        <Card className="m-4">
+          <CardContent className="flex flex-col items-center gap-4 py-8">
+            <p className="text-muted-foreground text-sm">
+              This note is still generating. Check again when ready.
+            </p>
             <Button
               type="button"
               variant="outline"
@@ -91,8 +92,8 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
             >
               Check again
             </Button>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       ) : null}
 
       {note.status === 'failed' ? (

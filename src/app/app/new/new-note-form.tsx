@@ -42,6 +42,7 @@ import {
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import { GeneratingNotebookState } from '@/app/app/notes/[noteId]/generating-notebook-state'
 import {
   extractHtmlTitle,
   parseNotebookHtmlFile,
@@ -362,6 +363,7 @@ export function NewNoteForm() {
   const folders = foldersQuery.data ?? []
   const subjectIdForLinks = selectedSubjectId || null
   const folderIdForLinks = selectedFolderId === 'root' ? null : selectedFolderId
+  const isGenerating = createMutation.isPending && activeTab !== 'html'
 
   return (
     <>
@@ -409,381 +411,387 @@ export function NewNoteForm() {
             </div>
           </CardContent>
         ) : null}
-        <form noValidate onSubmit={submitNote}>
-          <CardContent className="space-y-6">
-            <FieldGroup>
-              <Controller
-                name="subjectId"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="new-note-subject">Subject</FieldLabel>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Select
-                        value={field.value || undefined}
-                        onValueChange={(value) => {
-                          field.onChange(value)
-                          form.setValue('folderId', 'root')
-                          form.clearErrors('subjectId')
-                        }}
-                      >
-                        <SelectTrigger
-                          id="new-note-subject"
-                          className="w-full sm:w-72"
-                          aria-invalid={fieldState.invalid}
-                        >
-                          <SelectValue placeholder="Choose a subject" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {subjects.map((subject) => (
-                            <SelectItem key={subject.id} value={subject.id}>
-                              {subject.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setCreateSubjectOpen(true)}
-                      >
-                        <PlusIcon />
-                        New subject
-                      </Button>
-                    </div>
-                    <FieldDescription>
-                      Required. Create a subject if it does not exist yet.
-                    </FieldDescription>
-                    {fieldState.invalid ? (
-                      <FieldError errors={[fieldState.error]} />
-                    ) : null}
-                  </Field>
-                )}
-              />
-
-              {selectedSubjectId ? (
+        {isGenerating ? (
+          <CardContent>
+            <GeneratingNotebookState />
+          </CardContent>
+        ) : (
+          <form noValidate onSubmit={submitNote}>
+            <CardContent className="space-y-6">
+              <FieldGroup>
                 <Controller
-                  name="folderId"
+                  name="subjectId"
                   control={form.control}
-                  render={({ field }) => (
-                    <Field>
-                      <FieldLabel htmlFor="new-note-folder">Folder</FieldLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        disabled={foldersQuery.isLoading}
-                      >
-                        <SelectTrigger
-                          id="new-note-folder"
-                          className="w-full sm:w-72"
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor="new-note-subject">
+                        Subject
+                      </FieldLabel>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Select
+                          value={field.value || undefined}
+                          onValueChange={(value) => {
+                            field.onChange(value)
+                            form.setValue('folderId', 'root')
+                            form.clearErrors('subjectId')
+                          }}
                         >
-                          <SelectValue placeholder="Choose a folder" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="root">Subject root</SelectItem>
-                          {folders.map((folder) => (
-                            <SelectItem key={folder.id} value={folder.id}>
-                              {folder.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                          <SelectTrigger
+                            id="new-note-subject"
+                            className="w-full sm:w-72"
+                            aria-invalid={fieldState.invalid}
+                          >
+                            <SelectValue placeholder="Choose a subject" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {subjects.map((subject) => (
+                              <SelectItem key={subject.id} value={subject.id}>
+                                {subject.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setCreateSubjectOpen(true)}
+                        >
+                          <PlusIcon />
+                          New subject
+                        </Button>
+                      </div>
                       <FieldDescription>
-                        Optional folder inside the subject. Leave at subject
-                        root if you are not nesting this note.
+                        Required. Create a subject if it does not exist yet.
                       </FieldDescription>
+                      {fieldState.invalid ? (
+                        <FieldError errors={[fieldState.error]} />
+                      ) : null}
                     </Field>
                   )}
                 />
-              ) : null}
-            </FieldGroup>
 
-            <Tabs value={activeTab}>
-              <TabsList>
-                <TabsTrigger asChild value="transcript">
-                  <Link
-                    href={tabHref(
-                      'transcript',
-                      subjectIdForLinks,
-                      folderIdForLinks,
-                    )}
-                  >
-                    Transcript
-                  </Link>
-                </TabsTrigger>
-                <TabsTrigger asChild value="youtube">
-                  <Link
-                    href={tabHref(
-                      'youtube',
-                      subjectIdForLinks,
-                      folderIdForLinks,
-                    )}
-                  >
-                    YouTube
-                  </Link>
-                </TabsTrigger>
-                <TabsTrigger asChild value="html">
-                  <Link
-                    href={tabHref('html', subjectIdForLinks, folderIdForLinks)}
-                  >
-                    HTML
-                  </Link>
-                </TabsTrigger>
-              </TabsList>
-
-              <div className="bg-muted/40 mt-4 rounded-lg border p-4">
-                <p className="text-sm font-medium">
-                  {tabMeanings[activeTab].title}
-                </p>
-                <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
-                  {tabMeanings[activeTab].description}
-                </p>
-              </div>
-
-              <TabsContent value="transcript" className="mt-4 space-y-4">
-                <FieldGroup>
+                {selectedSubjectId ? (
                   <Controller
-                    name="mcqCount"
+                    name="folderId"
                     control={form.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="new-note-mcq-count-transcript">
-                          Video MCQ count / वीडियो MCQ संख्या
+                    render={({ field }) => (
+                      <Field>
+                        <FieldLabel htmlFor="new-note-folder">
+                          Folder
                         </FieldLabel>
-                        <Input
-                          {...field}
-                          id="new-note-mcq-count-transcript"
-                          type="number"
-                          min={1}
-                          step={1}
-                          inputMode="numeric"
-                          placeholder="e.g. 50, 70, 100"
-                          aria-invalid={fieldState.invalid}
-                        />
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={foldersQuery.isLoading}
+                        >
+                          <SelectTrigger
+                            id="new-note-folder"
+                            className="w-full sm:w-72"
+                          >
+                            <SelectValue placeholder="Choose a folder" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="root">Subject root</SelectItem>
+                            {folders.map((folder) => (
+                              <SelectItem key={folder.id} value={folder.id}>
+                                {folder.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FieldDescription>
-                          Required. We generate exactly this many bilingual
-                          video MCQs. Larger counts take longer.
+                          Optional folder inside the subject. Leave at subject
+                          root if you are not nesting this note.
                         </FieldDescription>
-                        {fieldState.invalid ? (
-                          <FieldError errors={[fieldState.error]} />
-                        ) : null}
                       </Field>
                     )}
                   />
+                ) : null}
+              </FieldGroup>
 
-                  <Field>
-                    <FieldLabel htmlFor="new-note-file">
-                      Upload transcript
-                    </FieldLabel>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <input
-                        ref={transcriptFileInputRef}
-                        id="new-note-file"
-                        type="file"
-                        accept={acceptedTranscriptTypes}
-                        className="sr-only"
-                        onChange={handleTranscriptFileChange}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => transcriptFileInputRef.current?.click()}
-                      >
-                        <UploadIcon />
-                        Choose file
-                      </Button>
-                      <p className="text-muted-foreground flex items-center gap-2 text-sm">
-                        <FileTextIcon className="size-4" />
-                        .txt, .md, .srt, or .vtt
-                      </p>
-                    </div>
-                    <FieldDescription>
-                      Upload a transcript file or paste the text below.
-                    </FieldDescription>
-                  </Field>
+              <Tabs value={activeTab}>
+                <TabsList>
+                  <TabsTrigger asChild value="transcript">
+                    <Link
+                      href={tabHref(
+                        'transcript',
+                        subjectIdForLinks,
+                        folderIdForLinks,
+                      )}
+                    >
+                      Transcript
+                    </Link>
+                  </TabsTrigger>
+                  <TabsTrigger asChild value="youtube">
+                    <Link
+                      href={tabHref(
+                        'youtube',
+                        subjectIdForLinks,
+                        folderIdForLinks,
+                      )}
+                    >
+                      YouTube
+                    </Link>
+                  </TabsTrigger>
+                  <TabsTrigger asChild value="html">
+                    <Link
+                      href={tabHref(
+                        'html',
+                        subjectIdForLinks,
+                        folderIdForLinks,
+                      )}
+                    >
+                      HTML
+                    </Link>
+                  </TabsTrigger>
+                </TabsList>
 
-                  <Controller
-                    name="transcript"
-                    control={form.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="new-note-transcript">
-                          Transcript text
-                        </FieldLabel>
-                        <Textarea
-                          {...field}
-                          id="new-note-transcript"
-                          placeholder="Paste transcript text here, or upload a file above..."
-                          rows={14}
-                          aria-invalid={fieldState.invalid}
+                <div className="bg-muted/40 mt-4 rounded-lg border p-4">
+                  <p className="text-sm font-medium">
+                    {tabMeanings[activeTab].title}
+                  </p>
+                  <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
+                    {tabMeanings[activeTab].description}
+                  </p>
+                </div>
+
+                <TabsContent value="transcript" className="mt-4 space-y-4">
+                  <FieldGroup>
+                    <Controller
+                      name="mcqCount"
+                      control={form.control}
+                      render={({ field, fieldState }) => (
+                        <Field data-invalid={fieldState.invalid}>
+                          <FieldLabel htmlFor="new-note-mcq-count-transcript">
+                            Video MCQ count / वीडियो MCQ संख्या
+                          </FieldLabel>
+                          <Input
+                            {...field}
+                            id="new-note-mcq-count-transcript"
+                            type="number"
+                            min={1}
+                            step={1}
+                            inputMode="numeric"
+                            placeholder="e.g. 50, 70, 100"
+                            aria-invalid={fieldState.invalid}
+                          />
+                          <FieldDescription>
+                            Required. We generate exactly this many bilingual
+                            video MCQs. Larger counts take longer.
+                          </FieldDescription>
+                          {fieldState.invalid ? (
+                            <FieldError errors={[fieldState.error]} />
+                          ) : null}
+                        </Field>
+                      )}
+                    />
+
+                    <Field>
+                      <FieldLabel htmlFor="new-note-file">
+                        Upload transcript
+                      </FieldLabel>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <input
+                          ref={transcriptFileInputRef}
+                          id="new-note-file"
+                          type="file"
+                          accept={acceptedTranscriptTypes}
+                          className="sr-only"
+                          onChange={handleTranscriptFileChange}
                         />
-                        {fieldState.invalid ? (
-                          <FieldError errors={[fieldState.error]} />
-                        ) : null}
-                      </Field>
-                    )}
-                  />
-                </FieldGroup>
-              </TabsContent>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() =>
+                            transcriptFileInputRef.current?.click()
+                          }
+                        >
+                          <UploadIcon />
+                          Choose file
+                        </Button>
+                        <p className="text-muted-foreground flex items-center gap-2 text-sm">
+                          <FileTextIcon className="size-4" />
+                          .txt, .md, .srt, or .vtt
+                        </p>
+                      </div>
+                      <FieldDescription>
+                        Upload a transcript file or paste the text below.
+                      </FieldDescription>
+                    </Field>
 
-              <TabsContent value="youtube" className="mt-4">
-                <FieldGroup>
-                  <Controller
-                    name="mcqCount"
-                    control={form.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="new-note-mcq-count-youtube">
-                          Video MCQ count / वीडियो MCQ संख्या
-                        </FieldLabel>
-                        <Input
-                          {...field}
-                          id="new-note-mcq-count-youtube"
-                          type="number"
-                          min={1}
-                          step={1}
-                          inputMode="numeric"
-                          placeholder="e.g. 50, 70, 100"
-                          aria-invalid={fieldState.invalid}
+                    <Controller
+                      name="transcript"
+                      control={form.control}
+                      render={({ field, fieldState }) => (
+                        <Field data-invalid={fieldState.invalid}>
+                          <FieldLabel htmlFor="new-note-transcript">
+                            Transcript text
+                          </FieldLabel>
+                          <Textarea
+                            {...field}
+                            id="new-note-transcript"
+                            placeholder="Paste transcript text here, or upload a file above..."
+                            rows={14}
+                            aria-invalid={fieldState.invalid}
+                          />
+                          {fieldState.invalid ? (
+                            <FieldError errors={[fieldState.error]} />
+                          ) : null}
+                        </Field>
+                      )}
+                    />
+                  </FieldGroup>
+                </TabsContent>
+
+                <TabsContent value="youtube" className="mt-4">
+                  <FieldGroup>
+                    <Controller
+                      name="mcqCount"
+                      control={form.control}
+                      render={({ field, fieldState }) => (
+                        <Field data-invalid={fieldState.invalid}>
+                          <FieldLabel htmlFor="new-note-mcq-count-youtube">
+                            Video MCQ count / वीडियो MCQ संख्या
+                          </FieldLabel>
+                          <Input
+                            {...field}
+                            id="new-note-mcq-count-youtube"
+                            type="number"
+                            min={1}
+                            step={1}
+                            inputMode="numeric"
+                            placeholder="e.g. 50, 70, 100"
+                            aria-invalid={fieldState.invalid}
+                          />
+                          <FieldDescription>
+                            Required. We generate exactly this many bilingual
+                            video MCQs. Larger counts take longer.
+                          </FieldDescription>
+                          {fieldState.invalid ? (
+                            <FieldError errors={[fieldState.error]} />
+                          ) : null}
+                        </Field>
+                      )}
+                    />
+
+                    <Controller
+                      name="url"
+                      control={form.control}
+                      render={({ field, fieldState }) => (
+                        <Field data-invalid={fieldState.invalid}>
+                          <FieldLabel htmlFor="new-note-url">
+                            YouTube URL
+                          </FieldLabel>
+                          <Input
+                            {...field}
+                            id="new-note-url"
+                            type="url"
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            aria-invalid={fieldState.invalid}
+                          />
+                          <FieldDescription>
+                            Paste the full video link. Captions must be
+                            available for note generation to work.
+                          </FieldDescription>
+                          {fieldState.invalid ? (
+                            <FieldError errors={[fieldState.error]} />
+                          ) : null}
+                        </Field>
+                      )}
+                    />
+                  </FieldGroup>
+                </TabsContent>
+
+                <TabsContent value="html" className="mt-4 space-y-4">
+                  <FieldGroup>
+                    <Field>
+                      <FieldLabel htmlFor="new-note-html-file">
+                        Upload HTML notebook
+                      </FieldLabel>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <input
+                          ref={htmlFileInputRef}
+                          id="new-note-html-file"
+                          type="file"
+                          accept={acceptedHtmlTypes}
+                          className="sr-only"
+                          onChange={handleHtmlFileChange}
                         />
-                        <FieldDescription>
-                          Required. We generate exactly this many bilingual
-                          video MCQs. Larger counts take longer.
-                        </FieldDescription>
-                        {fieldState.invalid ? (
-                          <FieldError errors={[fieldState.error]} />
-                        ) : null}
-                      </Field>
-                    )}
-                  />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => htmlFileInputRef.current?.click()}
+                        >
+                          <UploadIcon />
+                          Choose HTML file
+                        </Button>
+                        <p className="text-muted-foreground flex items-center gap-2 text-sm">
+                          <FileCode2Icon className="size-4" />
+                          {htmlFileName || '.html or .htm'}
+                        </p>
+                      </div>
+                      <FieldDescription>
+                        Upload an HTML file or paste the notebook HTML below.
+                      </FieldDescription>
+                    </Field>
 
-                  <Controller
-                    name="url"
-                    control={form.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="new-note-url">
-                          YouTube URL
-                        </FieldLabel>
-                        <Input
-                          {...field}
-                          id="new-note-url"
-                          type="url"
-                          placeholder="https://www.youtube.com/watch?v=..."
-                          aria-invalid={fieldState.invalid}
-                        />
-                        <FieldDescription>
-                          Paste the full video link. Captions must be available
-                          for note generation to work.
-                        </FieldDescription>
-                        {fieldState.invalid ? (
-                          <FieldError errors={[fieldState.error]} />
-                        ) : null}
-                      </Field>
-                    )}
-                  />
-                </FieldGroup>
-              </TabsContent>
+                    <Controller
+                      name="notebookHtml"
+                      control={form.control}
+                      render={({ field, fieldState }) => (
+                        <Field data-invalid={fieldState.invalid}>
+                          <FieldLabel htmlFor="new-note-html-content">
+                            HTML content
+                          </FieldLabel>
+                          <Textarea
+                            {...field}
+                            id="new-note-html-content"
+                            placeholder="Paste notebook HTML here, or upload a file above..."
+                            rows={14}
+                            aria-invalid={fieldState.invalid}
+                          />
+                          {fieldState.invalid ? (
+                            <FieldError errors={[fieldState.error]} />
+                          ) : null}
+                        </Field>
+                      )}
+                    />
 
-              <TabsContent value="html" className="mt-4 space-y-4">
-                <FieldGroup>
-                  <Field>
-                    <FieldLabel htmlFor="new-note-html-file">
-                      Upload HTML notebook
-                    </FieldLabel>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <input
-                        ref={htmlFileInputRef}
-                        id="new-note-html-file"
-                        type="file"
-                        accept={acceptedHtmlTypes}
-                        className="sr-only"
-                        onChange={handleHtmlFileChange}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => htmlFileInputRef.current?.click()}
-                      >
-                        <UploadIcon />
-                        Choose HTML file
-                      </Button>
-                      <p className="text-muted-foreground flex items-center gap-2 text-sm">
-                        <FileCode2Icon className="size-4" />
-                        {htmlFileName || '.html or .htm'}
-                      </p>
-                    </div>
-                    <FieldDescription>
-                      Upload an HTML file or paste the notebook HTML below.
-                    </FieldDescription>
-                  </Field>
-
-                  <Controller
-                    name="notebookHtml"
-                    control={form.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="new-note-html-content">
-                          HTML content
-                        </FieldLabel>
-                        <Textarea
-                          {...field}
-                          id="new-note-html-content"
-                          placeholder="Paste notebook HTML here, or upload a file above..."
-                          rows={14}
-                          aria-invalid={fieldState.invalid}
-                        />
-                        {fieldState.invalid ? (
-                          <FieldError errors={[fieldState.error]} />
-                        ) : null}
-                      </Field>
-                    )}
-                  />
-
-                  <Controller
-                    name="htmlTitle"
-                    control={form.control}
-                    render={({ field, fieldState }) => (
-                      <Field data-invalid={fieldState.invalid}>
-                        <FieldLabel htmlFor="new-note-html-title">
-                          Note title
-                        </FieldLabel>
-                        <Input
-                          {...field}
-                          id="new-note-html-title"
-                          placeholder="Optional title so you can recognize this topic later"
-                          aria-invalid={fieldState.invalid}
-                        />
-                        {fieldState.invalid ? (
-                          <FieldError errors={[fieldState.error]} />
-                        ) : null}
-                      </Field>
-                    )}
-                  />
-                </FieldGroup>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-          <CardFooter className="mt-4 flex flex-col items-start gap-2 sm:flex-row sm:items-center">
-            {createMutation.isPending && activeTab !== 'html' ? (
-              <p className="text-muted-foreground text-sm">
-                Generating bilingual revision cards, summary table, and MCQs.
-                This can take several minutes — please keep this page open.
-              </p>
-            ) : null}
-            <Button
-              type="submit"
-              className="w-full sm:w-auto"
-              loading={createMutation.isPending}
-            >
-              {createMutation.isPending && activeTab !== 'html'
-                ? 'Generating notes…'
-                : activeTab === 'html'
-                  ? 'Save notebook'
-                  : 'Generate notes'}
-            </Button>
-          </CardFooter>
-        </form>
+                    <Controller
+                      name="htmlTitle"
+                      control={form.control}
+                      render={({ field, fieldState }) => (
+                        <Field data-invalid={fieldState.invalid}>
+                          <FieldLabel htmlFor="new-note-html-title">
+                            Note title
+                          </FieldLabel>
+                          <Input
+                            {...field}
+                            id="new-note-html-title"
+                            placeholder="Optional title so you can recognize this topic later"
+                            aria-invalid={fieldState.invalid}
+                          />
+                          {fieldState.invalid ? (
+                            <FieldError errors={[fieldState.error]} />
+                          ) : null}
+                        </Field>
+                      )}
+                    />
+                  </FieldGroup>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+            <CardFooter className="mt-4 flex flex-col items-start gap-2 sm:flex-row sm:items-center">
+              <Button
+                type="submit"
+                className="w-full sm:w-auto"
+                loading={createMutation.isPending}
+              >
+                {activeTab === 'html' ? 'Save notebook' : 'Generate notes'}
+              </Button>
+            </CardFooter>
+          </form>
+        )}
       </Card>
 
       <Dialog
