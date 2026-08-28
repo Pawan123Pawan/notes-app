@@ -9,11 +9,7 @@ const requiredSubjectId = z.string().min(1, 'Subject is required')
 export const createNoteInput = z.discriminatedUnion('sourceType', [
   z.object({
     sourceType: z.literal('transcript'),
-    transcript: z
-      .string()
-      .trim()
-      .min(1, 'Transcript is required')
-      .max(500_000, 'Transcript is too long'),
+    transcript: z.string().trim().min(1, 'Transcript is required'),
     subjectId: requiredSubjectId,
     folderId: z.string().nullable().optional(),
   }),
