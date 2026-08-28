@@ -2,12 +2,14 @@ const REVISION_NOTES_CSS = `
 :root {
   --primary: #1e3a8a;
   --secondary: #0d9488;
-  --accent: #d97706;
-  --danger: #b91c1c;
+  --accent: #ea580c;
+  --danger: #dc2626;
   --bg-light: #f8fafc;
   --text-dark: #1e293b;
   --card-bg: #ffffff;
   --border-color: #cbd5e1;
+  --highlight-yellow: rgba(254, 240, 138, 0.95);
+  --highlight-amber: #fef3c7;
 }
 html, body {
   margin: 0;
@@ -45,7 +47,7 @@ body {
   margin-top: 36px;
   margin-bottom: 16px;
   font-size: 1.5rem;
-  background: #f1f5f9;
+  background: linear-gradient(90deg, #dbeafe, #ecfdf5);
   padding-top: 6px;
   padding-bottom: 6px;
   border-radius: 0 6px 6px 0;
@@ -80,8 +82,9 @@ body {
   margin: 14px 0;
 }
 .card-accent {
-  border-left-color: var(--accent);
-  background: #fffdfa;
+  border-left: 5px solid var(--accent);
+  background: var(--highlight-amber);
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.12);
 }
 .badge {
   display: inline-block;
@@ -90,7 +93,7 @@ body {
   font-weight: 700;
   border-radius: 12px;
   color: #fff;
-  background: var(--secondary);
+  background: #0f766e;
   margin-right: 6px;
 }
 .badge-accent {
@@ -98,6 +101,10 @@ body {
 }
 .badge-danger {
   background: var(--danger);
+}
+.container strong {
+  color: #b45309;
+  background: linear-gradient(transparent 58%, var(--highlight-yellow) 58%);
 }
 .container table {
   width: 100%;
@@ -143,7 +150,7 @@ body {
   margin-bottom: 4px;
 }
 .mcq-answer-side {
-  background: #f1f5f9;
+  background: linear-gradient(90deg, #fef3c7, #fff7ed);
   border-left: 4px solid var(--accent);
   padding: 8px 12px;
   font-size: 0.9rem;

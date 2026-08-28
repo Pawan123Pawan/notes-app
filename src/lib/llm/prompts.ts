@@ -58,7 +58,16 @@ Use these badge label styles when relevant:
 - **वृद्धि दर / Growth Rate:** targets vs achieved
 - **विशेष बिंदु / Special Note:** warnings, exceptions
 
-Mark highlight/special topics (reforms, holidays, crises) with a note: [ACCENT CARD]
+Mark highlight/special topics (reforms, holidays, crises, exam-critical definitions) with a note: [ACCENT CARD]
+
+# HIGHLIGHT MARKERS (for colorful rendering)
+
+Tag key facts so they render with bright highlights in the final HTML:
+- Prefix subtopics with [ACCENT CARD] when they contain dates, reforms, crises, key events, or exam-critical definitions.
+- Use **शुरुआत / Start:** or **प्रमुख घटनाएं / Key Events:** for every date, year, percentage, or statistic.
+- Use **विशेष बिंदु / Special Note:** for warnings, exceptions, and common mistakes.
+- Bold-wrap (**...**) dates, numbers, percentages, proper nouns, and key terms inside fact lines.
+- In Part 2 table, bold-wrap dates, numbers, and key terms in all three columns — not just the topic column.
 
 Include when relevant within Part 1:
 • Numbered steps
@@ -245,12 +254,22 @@ For warnings/exceptions use <span class="badge badge-danger">Label</span>.
 Each Hindi fact → <p class="hi-text"> with optional badge span.
 Each English fact → <p class="en-text"> immediately after its Hindi pair.
 
+# HIGHLIGHT AND COLOR RULES (IMPORTANT — READABILITY)
+
+Apply colorful highlights to key facts so notes are easy to scan:
+- [ACCENT CARD] subtopics → always use <div class="card card-accent"> (never plain .card).
+- Dates, years, percentages, statistics, exam facts → <span class="badge badge-accent">Label</span> and wrap the value in <strong>.
+- Warnings, exceptions, common mistakes → <span class="badge badge-danger">Label</span>.
+- Key terms, names, numbers inside fact text → wrap in <strong> inside .hi-text and .en-text.
+- Most cards should have at least one badge-accent or strong highlight.
+
 ---
 
 # PART 2 — SYNTHESIS TABLE
 
 Render the markdown table as a styled <table> with <thead> and <tbody>.
 Preserve all rows. Use <strong> for topic names in the first column.
+Also wrap dates, numbers, percentages, and key terms in <strong> inside every table cell.
 
 ---
 

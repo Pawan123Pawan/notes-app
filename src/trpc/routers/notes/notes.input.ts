@@ -2,7 +2,6 @@ import { z } from 'zod'
 
 import { noteSourceTypes } from '@/db/schema/note.constants'
 import { mcqCountSchema } from '@/lib/mcq-count'
-import { getNotebookHtmlMaxLength } from '@/lib/notebook-html-file'
 import { isYoutubeUrl } from '@/lib/youtube-url'
 
 const requiredSubjectId = z.string().min(1, 'Subject is required')
@@ -26,11 +25,7 @@ export const createNoteInput = z.discriminatedUnion('sourceType', [
   }),
   z.object({
     sourceType: z.literal('html'),
-    notebookHtml: z
-      .string()
-      .trim()
-      .min(1, 'HTML notebook is required')
-      .max(getNotebookHtmlMaxLength(), 'HTML notebook is too long'),
+    notebookHtml: z.string().trim().min(1, 'HTML notebook is required'),
     title: z.string().trim().min(1).max(200).optional(),
     subjectId: requiredSubjectId,
     folderId: z.string().nullable().optional(),

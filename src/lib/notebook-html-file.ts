@@ -1,9 +1,3 @@
-const MAX_NOTEBOOK_HTML_LENGTH = 2_000_000
-
-export function getNotebookHtmlMaxLength() {
-  return MAX_NOTEBOOK_HTML_LENGTH
-}
-
 export function parseNotebookHtmlFile(fileName: string, content: string) {
   const extension = fileName.split('.').pop()?.toLowerCase()
   const trimmed = content.trim()
@@ -14,10 +8,6 @@ export function parseNotebookHtmlFile(fileName: string, content: string) {
 
   if (extension && extension !== 'html' && extension !== 'htm') {
     throw new Error('Choose an .html or .htm file')
-  }
-
-  if (trimmed.length > MAX_NOTEBOOK_HTML_LENGTH) {
-    throw new Error('HTML file is too large')
   }
 
   return {
