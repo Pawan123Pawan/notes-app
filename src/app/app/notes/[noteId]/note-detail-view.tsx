@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 
 import { NoteDetailSkeleton } from '@/components/app-skeletons'
-import { BaseButton } from '@/components/ui/button'
+import { BaseButton, Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import type { NoteStatus } from '@/db/schema/note.constants'
 import { useTRPC } from '@/trpc/react'
@@ -43,13 +43,7 @@ function buildFolderPath(
 export function NoteDetailView({ noteId }: NoteDetailViewProps) {
   const trpc = useTRPC()
 
-  const noteQuery = useQuery({
-    ...trpc.notes.getById.queryOptions({ noteId }),
-    refetchInterval: (query) => {
-      const status = query.state.data?.status
-      return status && isProcessingStatus(status) ? 2000 : false
-    },
-  })
+  const noteQuery = useQuery(trpc.notes.getById.queryOptions({ noteId }))
 
   const note = noteQuery.data
   const subjectId = note?.subjectId
@@ -85,7 +79,21 @@ export function NoteDetailView({ noteId }: NoteDetailViewProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {isProcessingStatus(note.status) ? <GeneratingNotebookState /> : null}
+      {isProcessingStatus(note.status) ? (
+        <div className="flex flex-col gap-4 p-4">
+          <GeneratingNotebookState />
+          <div className="flex justify-center">
+            <Button
+              type="button"
+              variant="outline"
+              loading={noteQuery.isFetching && !noteQuery.isLoading}
+              onClick={() => void noteQuery.refetch()}
+            >
+              Check again
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {note.status === 'failed' ? (
         <Card className="border-destructive/40">

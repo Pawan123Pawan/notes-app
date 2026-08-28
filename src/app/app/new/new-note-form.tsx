@@ -131,6 +131,10 @@ export function NewNoteForm() {
   const transcriptFileInputRef = useRef<HTMLInputElement>(null)
   const htmlFileInputRef = useRef<HTMLInputElement>(null)
   const [createSubjectOpen, setCreateSubjectOpen] = useState(false)
+  const [completedNoteId, setCompletedNoteId] = useState<string | null>(null)
+  const [completedNoteKind, setCompletedNoteKind] = useState<
+    'generated' | 'imported'
+  >('generated')
   const activeTab = parseNewNoteTab(searchParams.get('tab'))
   const initialSubjectId = searchParams.get('subjectId') ?? ''
   const initialFolderId = searchParams.get('folderId') ?? 'root'
@@ -178,10 +182,14 @@ export function NewNoteForm() {
 
   const createMutation = useMutation(
     trpc.notes.create.mutationOptions({
-      onSuccess: (data) => {
-        const href = `/app/notes/${data.id}`
-        triggerRouteProgressStart(href)
-        router.push(href)
+      onSuccess: async (data, variables) => {
+        setCompletedNoteId(data.id)
+        setCompletedNoteKind(
+          variables.sourceType === 'html' ? 'imported' : 'generated',
+        )
+        await queryClient.invalidateQueries({
+          queryKey: trpc.notes.list.queryKey(),
+        })
       },
       onError: (error) => {
         showErrorToast(
@@ -366,6 +374,41 @@ export function NewNoteForm() {
             topic you can review later.
           </CardDescription>
         </CardHeader>
+        {completedNoteId ? (
+          <CardContent className="border-b">
+            <div className="flex flex-col gap-3 rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-4">
+              <p className="font-medium text-emerald-800 dark:text-emerald-300">
+                {completedNoteKind === 'imported'
+                  ? 'Notebook saved successfully'
+                  : 'Notes generated successfully'}
+              </p>
+              <p className="text-muted-foreground text-sm">
+                {completedNoteKind === 'imported'
+                  ? 'Your HTML notebook is ready to view.'
+                  : 'Your bilingual revision notes are ready to view.'}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    const href = `/app/notes/${completedNoteId}`
+                    triggerRouteProgressStart(href)
+                    router.push(href)
+                  }}
+                >
+                  View notes
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCompletedNoteId(null)}
+                >
+                  Create another note
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        ) : null}
         <form noValidate onSubmit={submitNote}>
           <CardContent className="space-y-6">
             <FieldGroup>
@@ -721,13 +764,23 @@ export function NewNoteForm() {
               </TabsContent>
             </Tabs>
           </CardContent>
-          <CardFooter className="mt-4">
+          <CardFooter className="mt-4 flex flex-col items-start gap-2 sm:flex-row sm:items-center">
+            {createMutation.isPending && activeTab !== 'html' ? (
+              <p className="text-muted-foreground text-sm">
+                Generating bilingual revision cards, summary table, and MCQs.
+                This can take several minutes — please keep this page open.
+              </p>
+            ) : null}
             <Button
               type="submit"
               className="w-full sm:w-auto"
               loading={createMutation.isPending}
             >
-              {activeTab === 'html' ? 'Save notebook' : 'Generate notes'}
+              {createMutation.isPending && activeTab !== 'html'
+                ? 'Generating notes…'
+                : activeTab === 'html'
+                  ? 'Save notebook'
+                  : 'Generate notes'}
             </Button>
           </CardFooter>
         </form>

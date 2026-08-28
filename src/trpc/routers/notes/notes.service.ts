@@ -195,15 +195,6 @@ async function ensureNotesSortOrderBackfilled(
   )
 }
 
-function scheduleNoteProcessing(noteId: string, mcqCount: number) {
-  void processNote(noteId, mcqCount).catch((error) => {
-    console.error(
-      `[notes] Background processing failed for ${noteId}:`,
-      getErrorMessage(error, 'Note processing failed'),
-    )
-  })
-}
-
 export async function processNote(noteId: string, mcqCount: number) {
   if (!mongoose.isValidObjectId(noteId)) {
     throw new Error(`Invalid note id: ${noteId}`)
@@ -301,11 +292,11 @@ export async function createNote(
       sortOrder,
     })
 
-    scheduleNoteProcessing(note._id.toString(), input.mcqCount)
+    await processNote(note._id.toString(), input.mcqCount)
 
     return {
       id: note._id.toString(),
-      status: note.status,
+      status: 'completed' as const,
     }
   }
 
@@ -339,11 +330,11 @@ export async function createNote(
     sortOrder,
   })
 
-  scheduleNoteProcessing(note._id.toString(), input.mcqCount)
+  await processNote(note._id.toString(), input.mcqCount)
 
   return {
     id: note._id.toString(),
-    status: note.status,
+    status: 'completed' as const,
   }
 }
 
