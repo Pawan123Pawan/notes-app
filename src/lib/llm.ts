@@ -16,8 +16,6 @@ type CompleteOptions = {
 }
 
 const QUIZ_BATCH_SIZE = 25
-const QUIZ_TOTAL_QUESTIONS = 100
-const QUIZ_TOTAL_BATCHES = QUIZ_TOTAL_QUESTIONS / QUIZ_BATCH_SIZE
 
 function createLlmClient() {
   const apiKey = getLlmApiKey()
@@ -71,20 +69,30 @@ async function complete(prompt: string, options: CompleteOptions = {}) {
 }
 
 function countQuizQuestions(markdown: string) {
-  const matches = markdown.match(/^### Q\d{3}\s*$/gm)
+  const matches = markdown.match(/^### Q\d+\s*$/gm)
   return matches?.length ?? 0
 }
 
-function buildQuizBatch(batchIndex: number): VideoQuizBatch {
-  const startQuestion = (batchIndex - 1) * QUIZ_BATCH_SIZE + 1
-  const endQuestion = batchIndex * QUIZ_BATCH_SIZE
+function buildQuizPlan(totalMcqCount: number): VideoQuizBatch[] {
+  const totalBatches = Math.ceil(totalMcqCount / QUIZ_BATCH_SIZE)
+  const padWidth = Math.max(3, String(totalMcqCount).length)
+  const batches: VideoQuizBatch[] = []
 
-  return {
-    batchIndex,
-    totalBatches: QUIZ_TOTAL_BATCHES,
-    startQuestion,
-    endQuestion,
+  for (let batchIndex = 1; batchIndex <= totalBatches; batchIndex++) {
+    const startQuestion = (batchIndex - 1) * QUIZ_BATCH_SIZE + 1
+    const endQuestion = Math.min(batchIndex * QUIZ_BATCH_SIZE, totalMcqCount)
+
+    batches.push({
+      batchIndex,
+      totalBatches,
+      startQuestion,
+      endQuestion,
+      totalMcqCount,
+      padWidth,
+    })
   }
+
+  return batches
 }
 
 async function generateVideoQuizBatch(
@@ -125,26 +133,27 @@ async function generateVideoQuizBatch(
 export async function generateVideoQuiz(
   rawTranscript: string,
   structuredNotes: string,
+  mcqCount: number,
 ) {
   const preview = structuredNotes.slice(0, 4_000)
-  const batches: string[] = []
+  const batches = buildQuizPlan(mcqCount)
+  const batchResults: string[] = []
 
-  for (let i = 1; i <= QUIZ_TOTAL_BATCHES; i++) {
-    const batch = buildQuizBatch(i)
+  for (const batch of batches) {
     const batchMarkdown = await generateVideoQuizBatch(
       rawTranscript,
       preview,
       batch,
     )
-    batches.push(batchMarkdown)
+    batchResults.push(batchMarkdown)
   }
 
-  const merged = batches.join('\n\n')
+  const merged = batchResults.join('\n\n')
   const totalCount = countQuizQuestions(merged)
 
-  if (totalCount !== QUIZ_TOTAL_QUESTIONS) {
+  if (totalCount !== mcqCount) {
     throw new Error(
-      `Video quiz generated ${totalCount} questions, expected ${QUIZ_TOTAL_QUESTIONS}`,
+      `Video quiz generated ${totalCount} questions, expected ${mcqCount}`,
     )
   }
 

@@ -186,40 +186,60 @@ export type VideoQuizBatch = {
   totalBatches: number
   startQuestion: number
   endQuestion: number
+  totalMcqCount: number
+  padWidth: number
+}
+
+function formatQuizQuestionNumber(questionNumber: number, padWidth: number) {
+  return `Q${String(questionNumber).padStart(padWidth, '0')}`
 }
 
 export const videoQuizPrompt = (
   rawTranscript: string,
   structuredNotesPreview: string,
   batch: VideoQuizBatch,
-) => `# ROLE
+) => {
+  const batchCount = batch.endQuestion - batch.startQuestion + 1
+  const startLabel = formatQuizQuestionNumber(
+    batch.startQuestion,
+    batch.padWidth,
+  )
+  const endLabel = formatQuizQuestionNumber(batch.endQuestion, batch.padWidth)
+  const exampleLabel = formatQuizQuestionNumber(
+    batch.startQuestion,
+    batch.padWidth,
+  )
+
+  return `# ROLE
 
 You are an expert exam question writer creating bilingual Hindi–English MCQs for video study material.
 
-Generate EXACTLY ${batch.endQuestion - batch.startQuestion + 1} multiple-choice questions for this batch.
-Question numbers: Q${String(batch.startQuestion).padStart(3, '0')} through Q${String(batch.endQuestion).padStart(3, '0')}.
+The user requested EXACTLY ${batch.totalMcqCount} MCQs total across all batches.
+Generate EXACTLY ${batchCount} multiple-choice questions for this batch.
+Question numbers: ${startLabel} through ${endLabel}.
 Batch ${batch.batchIndex} of ${batch.totalBatches}.
 
 ---
 
 # RULES (STRICT)
 
+• You MUST generate exactly ${batch.totalMcqCount} MCQs total across all batches.
 • Base every question ONLY on facts in the transcript and study notes preview.
 • Never invent or hallucinate facts.
 • Each question has exactly 4 options: A, B, C, D.
 • Exactly one correct answer per question.
 • All text must be bilingual (Hindi Devanagari + English).
 • Do NOT repeat questions from other batches.
-• Output EXACTLY ${batch.endQuestion - batch.startQuestion + 1} questions — no more, no less.
+• Output EXACTLY ${batchCount} questions in this batch — no more, no less.
 
 ---
 
 # OUTPUT FORMAT (STRICT)
 
-${batch.batchIndex === 1 ? '## वीडियो क्विज़ / Video Quiz (100 MCQs)\n' : ''}
+${batch.batchIndex === 1 ? `## वीडियो क्विज़ / Video Quiz (${batch.totalMcqCount} MCQs)\n` : ''}
 For each question use this exact schema:
 
-### Q${String(batch.startQuestion).padStart(3, '0')}
+### ${exampleLabel}
 **HI:** [Hindi question]
 **EN:** [English question]
 - A) [Hindi] / [English]
@@ -230,7 +250,7 @@ For each question use this exact schema:
 **ExplainHI:** [Hindi explanation of why the answer is correct]
 **ExplainEN:** [English explanation of why the answer is correct]
 
-Continue numbering sequentially through Q${String(batch.endQuestion).padStart(3, '0')}.
+Continue numbering sequentially through ${endLabel}.
 
 ---
 
@@ -254,12 +274,13 @@ ${structuredNotesPreview}
 
 ${rawTranscript}
 `
+}
 
 export const notebookHtmlPrompt = (structuredNotes: string) => `# ROLE
 
 You are an expert HTML notebook designer.
 
-Convert the provided Markdown study notes (including Video Q&A and 100 MCQ Video Quiz) into a beautiful spiral notebook HTML document.
+Convert the provided Markdown study notes (including Video Q&A and Video Quiz MCQs) into a beautiful spiral notebook HTML document.
 
 Take as much time as needed.
 Accuracy is more important than speed.
@@ -357,9 +378,9 @@ Render each Q&A pair as:
 
 ---
 
-# VIDEO QUIZ HTML (100 MCQs — CRITICAL LAYOUT)
+# VIDEO QUIZ HTML (CRITICAL LAYOUT)
 
-Render EVERY MCQ using a TWO-COLUMN grid — answer panel on the RIGHT, NOT at the bottom.
+Render EVERY MCQ from the Video Quiz section using a TWO-COLUMN grid — answer panel on the RIGHT, NOT at the bottom.
 
 Required structure for each question:
 

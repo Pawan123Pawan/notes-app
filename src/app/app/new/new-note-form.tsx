@@ -61,6 +61,7 @@ const acceptedHtmlTypes = '.html,.htm,text/html'
 type NewNoteFormValues = {
   transcript: string
   url: string
+  mcqCount: string
   notebookHtml: string
   htmlTitle: string
   htmlFileName: string
@@ -140,6 +141,7 @@ export function NewNoteForm() {
     defaultValues: {
       transcript: '',
       url: '',
+      mcqCount: '',
       notebookHtml: '',
       htmlTitle: '',
       htmlFileName: '',
@@ -231,6 +233,7 @@ export function NewNoteForm() {
         ? createNoteInput.safeParse({
             sourceType: 'transcript',
             transcript: values.transcript,
+            mcqCount: values.mcqCount,
             subjectId: values.subjectId,
             folderId,
           })
@@ -238,6 +241,7 @@ export function NewNoteForm() {
           ? createNoteInput.safeParse({
               sourceType: 'youtube',
               url: values.url,
+              mcqCount: values.mcqCount,
               subjectId: values.subjectId,
               folderId,
             })
@@ -259,6 +263,7 @@ export function NewNoteForm() {
         if (
           field === 'transcript' ||
           field === 'url' ||
+          field === 'mcqCount' ||
           field === 'subjectId'
         ) {
           form.setError(field, { message: issue.message })
@@ -494,6 +499,35 @@ export function NewNoteForm() {
 
               <TabsContent value="transcript" className="mt-4 space-y-4">
                 <FieldGroup>
+                  <Controller
+                    name="mcqCount"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="new-note-mcq-count-transcript">
+                          Video MCQ count / वीडियो MCQ संख्या
+                        </FieldLabel>
+                        <Input
+                          {...field}
+                          id="new-note-mcq-count-transcript"
+                          type="number"
+                          min={1}
+                          step={1}
+                          inputMode="numeric"
+                          placeholder="e.g. 50, 70, 100"
+                          aria-invalid={fieldState.invalid}
+                        />
+                        <FieldDescription>
+                          Required. We generate exactly this many bilingual
+                          video MCQs. Larger counts take longer.
+                        </FieldDescription>
+                        {fieldState.invalid ? (
+                          <FieldError errors={[fieldState.error]} />
+                        ) : null}
+                      </Field>
+                    )}
+                  />
+
                   <Field>
                     <FieldLabel htmlFor="new-note-file">
                       Upload transcript
@@ -551,6 +585,35 @@ export function NewNoteForm() {
 
               <TabsContent value="youtube" className="mt-4">
                 <FieldGroup>
+                  <Controller
+                    name="mcqCount"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="new-note-mcq-count-youtube">
+                          Video MCQ count / वीडियो MCQ संख्या
+                        </FieldLabel>
+                        <Input
+                          {...field}
+                          id="new-note-mcq-count-youtube"
+                          type="number"
+                          min={1}
+                          step={1}
+                          inputMode="numeric"
+                          placeholder="e.g. 50, 70, 100"
+                          aria-invalid={fieldState.invalid}
+                        />
+                        <FieldDescription>
+                          Required. We generate exactly this many bilingual
+                          video MCQs. Larger counts take longer.
+                        </FieldDescription>
+                        {fieldState.invalid ? (
+                          <FieldError errors={[fieldState.error]} />
+                        ) : null}
+                      </Field>
+                    )}
+                  />
+
                   <Controller
                     name="url"
                     control={form.control}

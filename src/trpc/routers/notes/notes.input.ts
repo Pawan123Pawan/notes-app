@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { noteSourceTypes } from '@/db/schema/note.constants'
+import { mcqCountSchema } from '@/lib/mcq-count'
 import { getNotebookHtmlMaxLength } from '@/lib/notebook-html-file'
 import { isYoutubeUrl } from '@/lib/youtube-url'
 
@@ -10,6 +11,7 @@ export const createNoteInput = z.discriminatedUnion('sourceType', [
   z.object({
     sourceType: z.literal('transcript'),
     transcript: z.string().trim().min(1, 'Transcript is required'),
+    mcqCount: mcqCountSchema,
     subjectId: requiredSubjectId,
     folderId: z.string().nullable().optional(),
   }),
@@ -18,6 +20,7 @@ export const createNoteInput = z.discriminatedUnion('sourceType', [
     url: z
       .url('Enter a valid YouTube URL')
       .refine(isYoutubeUrl, 'Enter a valid YouTube URL'),
+    mcqCount: mcqCountSchema,
     subjectId: requiredSubjectId,
     folderId: z.string().nullable().optional(),
   }),

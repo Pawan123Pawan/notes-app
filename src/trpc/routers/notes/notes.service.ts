@@ -195,8 +195,8 @@ async function ensureNotesSortOrderBackfilled(
   )
 }
 
-function scheduleNoteProcessing(noteId: string) {
-  void processNote(noteId).catch((error) => {
+function scheduleNoteProcessing(noteId: string, mcqCount: number) {
+  void processNote(noteId, mcqCount).catch((error) => {
     console.error(
       `[notes] Background processing failed for ${noteId}:`,
       getErrorMessage(error, 'Note processing failed'),
@@ -204,7 +204,7 @@ function scheduleNoteProcessing(noteId: string) {
   })
 }
 
-export async function processNote(noteId: string) {
+export async function processNote(noteId: string, mcqCount: number) {
   if (!mongoose.isValidObjectId(noteId)) {
     throw new Error(`Invalid note id: ${noteId}`)
   }
@@ -234,6 +234,7 @@ export async function processNote(noteId: string) {
     const videoQuiz = await generateVideoQuiz(
       note.rawTranscript,
       structuredNotes,
+      mcqCount,
     )
     const fullMarkdown = mergeNotesWithQuiz(structuredNotes, videoQuiz)
     const [notebookHtml, title] = await Promise.all([
@@ -300,7 +301,7 @@ export async function createNote(
       sortOrder,
     })
 
-    scheduleNoteProcessing(note._id.toString())
+    scheduleNoteProcessing(note._id.toString(), input.mcqCount)
 
     return {
       id: note._id.toString(),
@@ -338,7 +339,7 @@ export async function createNote(
     sortOrder,
   })
 
-  scheduleNoteProcessing(note._id.toString())
+  scheduleNoteProcessing(note._id.toString(), input.mcqCount)
 
   return {
     id: note._id.toString(),
