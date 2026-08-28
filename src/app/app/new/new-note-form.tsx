@@ -184,13 +184,19 @@ export function NewNoteForm() {
   const createMutation = useMutation(
     trpc.notes.create.mutationOptions({
       onSuccess: async (data, variables) => {
-        setCompletedNoteId(data.id)
-        setCompletedNoteKind(
-          variables.sourceType === 'html' ? 'imported' : 'generated',
-        )
         await queryClient.invalidateQueries({
           queryKey: trpc.notes.list.queryKey(),
         })
+
+        if (variables.sourceType === 'html') {
+          const href = `/app/notes/${data.id}`
+          triggerRouteProgressStart(href)
+          router.push(href)
+          return
+        }
+
+        setCompletedNoteId(data.id)
+        setCompletedNoteKind('generated')
       },
       onError: (error) => {
         showErrorToast(
