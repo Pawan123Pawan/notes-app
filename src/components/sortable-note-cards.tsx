@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   DndContext,
   KeyboardSensor,
@@ -18,12 +19,24 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import {
   NoteCard,
   type NoteCardNote,
   type NoteCardSubject,
 } from '@/components/note-card'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
 import { cn, showErrorToast } from '@/lib/utils'
 import { useTRPC } from '@/trpc/react'
 
@@ -80,12 +93,15 @@ export function SortableNoteCards({
 }: SortableNoteCardsProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
+  const [clearAllOpen, setClearAllOpen] = useState(false)
 
   const listInput =
     folderId !== undefined
       ? ({ subjectId, folderId, limit: listLimit } as const)
       : ({ subjectId, limit: listLimit } as const)
   const listQueryKey = trpc.notes.list.queryKey(listInput)
+
+  const hasReadNotes = notes.some((note) => note.lastViewedAt != null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -142,6 +158,29 @@ export function SortableNoteCards({
     }),
   )
 
+  const clearAllReadMutation = useMutation(
+    trpc.notes.clearAllRead.mutationOptions({
+      onSuccess: async (data) => {
+        setClearAllOpen(false)
+        await queryClient.invalidateQueries({
+          queryKey: trpc.notes.list.queryKey(),
+        })
+        toast.success(
+          data.updatedCount === 1
+            ? 'Cleared read status on 1 note'
+            : `Cleared read status on ${data.updatedCount} notes`,
+        )
+      },
+      onError: (error) => {
+        showErrorToast(
+          'Could not clear read status',
+          error,
+          'Unable to clear read marks for these notes.',
+        )
+      },
+    }),
+  )
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
 
@@ -165,26 +204,74 @@ export function SortableNoteCards({
     })
   }
 
+  const confirmClearAllRead = () => {
+    clearAllReadMutation.mutate({
+      subjectId,
+      ...(folderId !== undefined ? { folderId } : {}),
+    })
+  }
+
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={handleDragEnd}
-    >
-      <SortableContext
-        items={notes.map((note) => note.id)}
-        strategy={rectSortingStrategy}
+    <div className="flex flex-col gap-3">
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={!hasReadNotes}
+          loading={clearAllReadMutation.isPending}
+          onClick={() => setClearAllOpen(true)}
+        >
+          Clear all read
+        </Button>
+      </div>
+
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
       >
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {notes.map((note) => (
-            <SortableNoteCardItem
-              key={note.id}
-              note={note}
-              subjects={subjects}
-            />
-          ))}
-        </div>
-      </SortableContext>
-    </DndContext>
+        <SortableContext
+          items={notes.map((note) => note.id)}
+          strategy={rectSortingStrategy}
+        >
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {notes.map((note) => (
+              <SortableNoteCardItem
+                key={note.id}
+                note={note}
+                subjects={subjects}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+
+      <AlertDialog open={clearAllOpen} onOpenChange={setClearAllOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear all read status?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the Read badge from every note in this list. You can
+              mark notes as read again later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={clearAllReadMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={clearAllReadMutation.isPending}
+              onClick={(event) => {
+                event.preventDefault()
+                confirmClearAllRead()
+              }}
+            >
+              {clearAllReadMutation.isPending ? 'Clearing…' : 'Clear all read'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   )
 }

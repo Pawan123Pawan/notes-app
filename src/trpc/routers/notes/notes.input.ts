@@ -95,4 +95,24 @@ export const updateNoteTitleInput = z.object({
 
 export type UpdateNoteTitleInput = z.infer<typeof updateNoteTitleInput>
 
+export const markNoteViewedInput = z.object({
+  noteId: z.string().min(1),
+})
+
+export type MarkNoteViewedInput = z.infer<typeof markNoteViewedInput>
+
+export const setNoteReadInput = z.object({
+  noteId: z.string().min(1),
+  read: z.boolean(),
+})
+
+export type SetNoteReadInput = z.infer<typeof setNoteReadInput>
+
+export const clearAllReadInput = z.object({
+  subjectId: z.string().min(1),
+  folderId: z.string().nullable().optional(),
+})
+
+export type ClearAllReadInput = z.infer<typeof clearAllReadInput>
+
 export const noteSourceTypeSchema = z.enum(noteSourceTypes)

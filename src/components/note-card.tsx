@@ -4,6 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  BookOpenCheckIcon,
+  BookOpenIcon,
   CopyIcon,
   FolderOpenIcon,
   MoreHorizontalIcon,
@@ -72,6 +74,7 @@ export type NoteCardNote = {
   sourceType: keyof typeof noteSourceTypeLabels
   subjectId?: string
   folderId?: string
+  lastViewedAt?: Date | string | null
 }
 
 export type NoteCardSubject = {
@@ -255,6 +258,25 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
     }),
   )
 
+  const setReadMutation = useMutation(
+    trpc.notes.setRead.mutationOptions({
+      onSuccess: async (_data, variables) => {
+        await invalidateNoteQueries()
+        toast.success(variables.read ? 'Marked as read' : 'Marked as unread')
+      },
+      onError: (error) => {
+        showErrorToast(
+          'Could not update read status',
+          error,
+          'Unable to update this note.',
+        )
+      },
+    }),
+  )
+
+  const isUnread = note.lastViewedAt == null
+  const showReadIndicator = note.status === 'completed' && !isUnread
+
   const copyNotebookHtml = async () => {
     try {
       const detail = await queryClient.fetchQuery(
@@ -349,6 +371,12 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
               <Badge variant={statusVariants[note.status]}>
                 {statusLabels[note.status]}
               </Badge>
+              {showReadIndicator ? (
+                <Badge variant="secondary">
+                  <BookOpenCheckIcon />
+                  Read
+                </Badge>
+              ) : null}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -372,6 +400,21 @@ export function NoteCard({ note, subjects }: NoteCardProps) {
                       <DropdownMenuItem onClick={copyNotebookHtml}>
                         <CopyIcon />
                         Copy HTML
+                      </DropdownMenuItem>
+                    ) : null}
+
+                    {note.status === 'completed' ? (
+                      <DropdownMenuItem
+                        disabled={setReadMutation.isPending}
+                        onClick={() =>
+                          setReadMutation.mutate({
+                            noteId: note.id,
+                            read: isUnread,
+                          })
+                        }
+                      >
+                        {isUnread ? <BookOpenCheckIcon /> : <BookOpenIcon />}
+                        {isUnread ? 'Mark as read' : 'Mark as unread'}
                       </DropdownMenuItem>
                     ) : null}
 

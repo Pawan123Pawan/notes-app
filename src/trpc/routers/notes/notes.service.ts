@@ -18,10 +18,13 @@ import { fetchYoutubeTranscript } from '@/lib/youtube'
 import { resolveFolderIdForNote } from '@/trpc/routers/folders/folders.service'
 
 import type {
+  ClearAllReadInput,
   CreateNoteInput,
   GetNoteByIdInput,
   ListNotesInput,
+  MarkNoteViewedInput,
   ReorderNotesInput,
+  SetNoteReadInput,
   UpdateNoteFolderInput,
   UpdateNoteSubjectInput,
   UpdateNoteTitleInput,
@@ -36,6 +39,7 @@ export type NoteSummary = {
   subjectId?: string
   folderId?: string
   metadata: NoteMetadata
+  lastViewedAt: Date | null
   createdAt: Date
   updatedAt: Date
 }
@@ -67,6 +71,7 @@ function toNoteSummary(note: NoteDocument): NoteSummary {
     subjectId: note.subjectId?.toString(),
     folderId: note.folderId?.toString(),
     metadata: note.metadata ?? {},
+    lastViewedAt: note.lastViewedAt ?? null,
     createdAt: note.createdAt,
     updatedAt: note.updatedAt,
   }
@@ -435,7 +440,7 @@ export async function listNotes(
     .sort({ sortOrder: 1, createdAt: -1, _id: -1 })
     .limit(input.limit + 1)
     .select(
-      'title sourceType sourceUrl status subjectId folderId metadata createdAt updatedAt sortOrder',
+      'title sourceType sourceUrl status subjectId folderId metadata lastViewedAt createdAt updatedAt sortOrder',
     )
 
   const hasMore = notes.length > input.limit
@@ -475,6 +480,87 @@ export async function updateNoteTitle(
   }
 
   return toNoteSummary(note)
+}
+
+export async function markNoteViewed(
+  userId: string,
+  input: MarkNoteViewedInput,
+): Promise<NoteSummary> {
+  if (!mongoose.isValidObjectId(input.noteId)) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Invalid note id',
+    })
+  }
+
+  await connectDB()
+
+  const note = await Note.findOneAndUpdate(
+    { _id: input.noteId, userId },
+    { lastViewedAt: new Date() },
+    { new: true },
+  )
+
+  if (!note) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: 'Note not found',
+    })
+  }
+
+  return toNoteSummary(note)
+}
+
+export async function setNoteRead(
+  userId: string,
+  input: SetNoteReadInput,
+): Promise<NoteSummary> {
+  if (!mongoose.isValidObjectId(input.noteId)) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Invalid note id',
+    })
+  }
+
+  await connectDB()
+
+  const note = await Note.findOneAndUpdate(
+    { _id: input.noteId, userId },
+    { lastViewedAt: input.read ? new Date() : null },
+    { new: true },
+  )
+
+  if (!note) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: 'Note not found',
+    })
+  }
+
+  return toNoteSummary(note)
+}
+
+export async function clearAllRead(
+  userId: string,
+  input: ClearAllReadInput,
+): Promise<{ updatedCount: number }> {
+  await connectDB()
+
+  await assertOwnedSubject(userId, input.subjectId)
+
+  const applyFolderFilter = input.folderId !== undefined
+
+  const result = await Note.updateMany(
+    {
+      userId,
+      ...subjectIdFilter(input.subjectId),
+      ...(applyFolderFilter ? folderIdFilter(input.folderId) : {}),
+      lastViewedAt: { $ne: null },
+    },
+    { $set: { lastViewedAt: null } },
+  )
+
+  return { updatedCount: result.modifiedCount }
 }
 
 export async function updateNoteSubject(

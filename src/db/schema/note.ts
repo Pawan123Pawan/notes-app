@@ -50,6 +50,10 @@ const noteSchema = new Schema(
       required: true,
       default: 0,
     },
+    lastViewedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true },
 )
