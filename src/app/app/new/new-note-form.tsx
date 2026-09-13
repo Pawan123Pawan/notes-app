@@ -384,8 +384,8 @@ export function NewNoteForm() {
         </CardHeader>
         {completedNoteId ? (
           <CardContent className="border-b">
-            <div className="flex flex-col gap-3 rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-4">
-              <p className="font-medium text-emerald-800 dark:text-emerald-300">
+            <div className="border-primary/25 bg-primary/10 flex flex-col gap-3 rounded-lg border p-4">
+              <p className="text-foreground font-medium">
                 {completedNoteKind === 'imported'
                   ? 'Notebook saved successfully'
                   : 'Notes generated successfully'}

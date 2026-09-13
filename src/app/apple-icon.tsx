@@ -1,9 +1,9 @@
 import { ImageResponse } from 'next/og'
 
-/** Hex for light `--primary: oklch(0.5 0.145 155)`. */
-const themePrimary = '#007a3c'
-/** Hex for light `--primary-foreground: oklch(0.99 0.01 155)`. */
-const themePrimaryForeground = '#f7fef9'
+/** Hex for light `--primary: oklch(0.205 0 0)`. */
+const themePrimary = '#000000'
+/** Hex for light `--primary-foreground: oklch(1 0 0)`. */
+const themePrimaryForeground = '#ffffff'
 
 export const size = {
   width: 180,
