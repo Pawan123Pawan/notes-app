@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboardIcon, NotebookPenIcon, PlusIcon } from 'lucide-react'
 
+import { AppShellDayCounter } from '@/components/app-shell-day-counter'
 import { AppShellUserMenu } from '@/components/app-shell-user-menu'
 import { RouteTransitionProgress } from '@/components/route-transition-progress'
 import { Separator } from '@/components/ui/separator'
@@ -109,6 +110,7 @@ function AppShellChrome({ children }: AppShellProps) {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
+          <AppShellDayCounter />
           <AppShellUserMenu />
         </SidebarFooter>
         <SidebarRail />
