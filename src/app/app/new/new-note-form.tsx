@@ -94,11 +94,11 @@ const tabMeanings: Record<NewNoteTab, { title: string; description: string }> =
   }
 
 function parseNewNoteTab(value: string | null): NewNoteTab {
-  if (value === 'youtube' || value === 'html') {
+  if (value === 'youtube' || value === 'transcript') {
     return value
   }
 
-  return 'transcript'
+  return 'html'
 }
 
 function tabHref(
@@ -108,7 +108,7 @@ function tabHref(
 ) {
   const params = new URLSearchParams()
 
-  if (tab !== 'transcript') {
+  if (tab !== 'html') {
     params.set('tab', tab)
   }
 
